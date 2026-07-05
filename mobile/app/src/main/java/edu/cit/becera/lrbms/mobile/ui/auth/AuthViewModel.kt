@@ -14,11 +14,11 @@ class AuthViewModel : ViewModel() {
 
     fun register(firstName: String, lastName: String, email: String, password: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null, successMessage = null)
             try {
                 val member = Member(firstName = firstName, lastName = lastName, email = email, password = password)
                 RetrofitClient.api.register(member)
-                _uiState.value = _uiState.value.copy(isLoading = false, isSuccess = true)
+                _uiState.value = _uiState.value.copy(isLoading = false, isSuccess = true, successMessage = "Registration successful!")
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = e.localizedMessage ?: "Registration failed")
             }
@@ -27,11 +27,11 @@ class AuthViewModel : ViewModel() {
 
     fun login(email: String, password: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null, successMessage = null)
             try {
                 val member = Member(email = email, password = password)
                 RetrofitClient.api.login(member)
-                _uiState.value = _uiState.value.copy(isLoading = false, isSuccess = true)
+                _uiState.value = _uiState.value.copy(isLoading = false, isSuccess = true, successMessage = "Login successful!")
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = e.localizedMessage ?: "Login failed")
             }
@@ -46,5 +46,6 @@ class AuthViewModel : ViewModel() {
 data class AuthUiState(
     val isLoading: Boolean = false,
     val isSuccess: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val successMessage: String? = null
 )
