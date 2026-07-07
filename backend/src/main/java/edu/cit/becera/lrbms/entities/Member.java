@@ -11,25 +11,29 @@ public class Member {
     private Long id;
 
     @Column(name = "first_name")
-private String firstName;
+    private String firstName;
 
-@Column(name = "last_name")
-private String lastName;
+    @Column(name = "last_name")
+    private String lastName;
 
     @Column(unique = true)
     private String email;
 
     private String password;
 
+    @Column(name = "role", nullable = false)
+    private String role = "MEMBER";
+
     public Member() {
     }
 
-    public Member(Long id, String firstName, String lastName, String email, String password) {
+    public Member(Long id, String firstName, String lastName, String email, String password, String role) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.password = password;
+        this.role = role == null || role.isBlank() ? "MEMBER" : role;
     }
 
     public Long getId() {
@@ -70,5 +74,13 @@ private String lastName;
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role == null || role.isBlank() ? "MEMBER" : role;
     }
 }

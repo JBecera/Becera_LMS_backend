@@ -34,6 +34,9 @@ public class MemberService {
             throw new IllegalArgumentException("Password is required");
         }
 
+        String normalizedRole = normalizeRole(member.getRole());
+        member.setRole(normalizedRole);
+
         try {
             return repository.save(member);
         } catch (DataIntegrityViolationException ex) {
@@ -53,6 +56,7 @@ public class MemberService {
         member.setLastName(updatedMember.getLastName());
         member.setEmail(updatedMember.getEmail());
         member.setPassword(updatedMember.getPassword());
+        member.setRole(normalizeRole(updatedMember.getRole()));
 
         return repository.save(member);
     }
@@ -70,5 +74,21 @@ public class MemberService {
         }
 
         return null;
+    }
+
+    public Member authenticate(String email, String password) {
+        return login(email, password);
+    }
+
+    private String normalizeRole(String role) {
+        if (role == null || role.isBlank()) {
+            return "MEMBER";
+        }
+
+        String normalized = role.trim().toUpperCase();
+        return switch (normalized) {
+            case "ADMIN", "LIBRARIAN", "MEMBER" -> normalized;
+            default -> "MEMBER";
+        };
     }
 }

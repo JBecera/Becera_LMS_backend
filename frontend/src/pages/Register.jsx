@@ -22,12 +22,12 @@ function Register() {
 
   const handleRegister = async () => {
     try {
-      await addMember(member);
+      await addMember({ ...member, role: "MEMBER" });
       alert("Registration successful!");
       navigate("/login");
     } catch (error) {
       console.error(error);
-      alert("Registration failed.");
+      alert(error.response?.data?.error || "Registration failed.");
     }
   };
 

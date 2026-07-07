@@ -53,7 +53,19 @@ public class MemberController {
     }
 
     @PostMapping("/login")
-    public Member login(@RequestBody Member member) {
-        return service.login(member.getEmail(), member.getPassword());
+    public ResponseEntity<?> login(@RequestBody Member member) {
+        Member authenticated = service.authenticate(member.getEmail(), member.getPassword());
+        if (authenticated == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Invalid credentials"));
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "id", authenticated.getId(),
+                "firstName", authenticated.getFirstName(),
+                "lastName", authenticated.getLastName(),
+                "email", authenticated.getEmail(),
+                "role", authenticated.getRole()
+        ));
     }
 }

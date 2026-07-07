@@ -23,11 +23,17 @@ function Login() {
       const res = await loginMember(member);
       localStorage.setItem("user", JSON.stringify(res.data));
 
-      alert("Login successful!");
-      navigate("/dashboard");
+      const role = res.data.role?.toUpperCase();
+      if (role === "ADMIN") {
+        navigate("/admin");
+      } else if (role === "LIBRARIAN") {
+        navigate("/librarian");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (error) {
       console.error(error);
-      alert("Invalid credentials");
+      alert(error.response?.data?.error || "Invalid credentials");
     }
   };
 

@@ -1,4 +1,4 @@
-import api from "./api";
+import api, { authApi } from "./api";
 
 // GET ALL
 export const getMembers = () => api.get("/members");
@@ -14,6 +14,6 @@ export const updateMember = (id, member) =>
 export const deleteMember = (id) =>
   api.delete(`/members/${id}`);
 
-// LOGIN (FIXED - consistent naming)
+// LOGIN
 export const loginMember = (member) =>
-  api.post("/members/login", member);
+  authApi.post("/auth/login", member);
