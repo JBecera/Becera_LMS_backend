@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class MemberService {
@@ -21,6 +22,13 @@ public class MemberService {
         return repository.findAll();
     }
 
+    public List<Member> getMembersByRole(String role) {
+        String normalized = normalizeRole(role);
+        return repository.findAll().stream()
+                .filter(member -> normalized.equalsIgnoreCase(member.getRole()))
+                .collect(Collectors.toList());
+    }
+
     public Member saveMember(Member member) {
         if (member == null) {
             throw new IllegalArgumentException("Member data is required");
@@ -32,6 +40,14 @@ public class MemberService {
 
         if (member.getPassword() == null || member.getPassword().isBlank()) {
             throw new IllegalArgumentException("Password is required");
+        }
+
+        if (member.getFirstName() == null || member.getFirstName().isBlank()) {
+            throw new IllegalArgumentException("First name is required");
+        }
+
+        if (member.getLastName() == null || member.getLastName().isBlank()) {
+            throw new IllegalArgumentException("Last name is required");
         }
 
         String normalizedRole = normalizeRole(member.getRole());
@@ -51,6 +67,22 @@ public class MemberService {
     public Member updateMember(Long id, Member updatedMember) {
 
         Member member = repository.findById(id).orElseThrow();
+
+        if (updatedMember.getFirstName() == null || updatedMember.getFirstName().isBlank()) {
+            throw new IllegalArgumentException("First name is required");
+        }
+
+        if (updatedMember.getLastName() == null || updatedMember.getLastName().isBlank()) {
+            throw new IllegalArgumentException("Last name is required");
+        }
+
+        if (updatedMember.getEmail() == null || updatedMember.getEmail().isBlank()) {
+            throw new IllegalArgumentException("Email is required");
+        }
+
+        if (updatedMember.getPassword() == null || updatedMember.getPassword().isBlank()) {
+            throw new IllegalArgumentException("Password is required");
+        }
 
         member.setFirstName(updatedMember.getFirstName());
         member.setLastName(updatedMember.getLastName());

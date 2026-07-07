@@ -31,6 +31,11 @@ public class MemberController {
         return service.getMember(id);
     }
 
+    @GetMapping("/role/{role}")
+    public List<Member> getMembersByRole(@PathVariable String role) {
+        return service.getMembersByRole(role);
+    }
+
     @PostMapping
     public ResponseEntity<?> createMember(@RequestBody Member member) {
         try {
@@ -43,13 +48,19 @@ public class MemberController {
     }
 
     @PutMapping("/{id}")
-    public Member updateMember(@PathVariable Long id, @RequestBody Member member) {
-        return service.updateMember(id, member);
+    public ResponseEntity<?> updateMember(@PathVariable Long id, @RequestBody Member member) {
+        try {
+            return ResponseEntity.ok(service.updateMember(id, member));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", ex.getMessage()));
+        }
     }
 
     @DeleteMapping("/{id}")
-    public void deleteMember(@PathVariable Long id) {
+    public ResponseEntity<?> deleteMember(@PathVariable Long id) {
         service.deleteMember(id);
+        return ResponseEntity.ok(Map.of("message", "Member removed successfully"));
     }
 
     @PostMapping("/login")
