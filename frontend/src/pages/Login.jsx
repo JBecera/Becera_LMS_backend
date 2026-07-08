@@ -21,9 +21,16 @@ function Login() {
   const handleLogin = async () => {
     try {
       const res = await loginMember(member);
-      localStorage.setItem("user", JSON.stringify(res.data));
+      const userPayload = {
+        id: res.data.id,
+        firstName: res.data.firstName,
+        lastName: res.data.lastName,
+        email: res.data.email,
+        role: res.data.role,
+      };
+      localStorage.setItem("user", JSON.stringify(userPayload));
 
-      const role = res.data.role?.toUpperCase();
+      const role = userPayload.role?.toUpperCase();
       if (role === "ADMIN") {
         navigate("/admin");
       } else if (role === "LIBRARIAN") {

@@ -6,6 +6,8 @@ import edu.cit.becera.lrbms.features.auth.model.AuthResponse;
 import edu.cit.becera.lrbms.repositories.MemberRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 public class AuthService {
     private final MemberRepository memberRepository;
@@ -19,9 +21,18 @@ public class AuthService {
             throw new IllegalArgumentException("Email and password are required");
         }
 
-        Member authenticated = memberRepository.findByEmail(request.getEmail())
-                .filter(member -> member.getPassword().equals(request.getPassword()))
-                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+        String normalizedPassword = request.getPassword().trim();
+
+        Optional<Member> candidate = memberRepository.findByEmail(normalizedEmail);
+        if (candidate.isEmpty()) {
+            throw new IllegalArgumentException("Invalid credentials");
+        }
+
+        Member authenticated = candidate.get();
+        if (!normalizedPassword.equals(authenticated.getPassword())) {
+            throw new IllegalArgumentException("Invalid credentials");
+        }
 
         return new AuthResponse(
                 authenticated.getId(),
