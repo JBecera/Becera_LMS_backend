@@ -1,27 +1,23 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
+import { createBook, deleteBook, getBooks, updateBook } from "../services/bookService";
 
 function LibrarianDashboard() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "null");
 
-  const [resources, setResources] = useState([]);
-  const [bookings, setBookings] = useState([]);
-  const [resourceForm, setResourceForm] = useState({ id: null, name: "", type: "Room" });
+  const [books, setBooks] = useState([]);
+  const [bookForm, setBookForm] = useState({ id: null, title: "", author: "", isbn: "", category: "", description: "", coverImage: "", availableCopies: 1 });
   const [message, setMessage] = useState("");
 
   const loadData = async () => {
     try {
-      const [resourcesRes, bookingsRes] = await Promise.all([
-        api.get("/resources"),
-        api.get("/bookings"),
-      ]);
-      setResources(resourcesRes.data);
-      setBookings(bookingsRes.data);
+      const response = await getBooks();
+      setBooks(response.data);
     } catch (error) {
       console.error(error);
-      setMessage("Unable to load librarian resources and bookings.");
+      setMessage("Unable to load the book catalog.");
     }
   };
 
@@ -34,25 +30,39 @@ function LibrarianDashboard() {
     navigate("/login");
   };
 
-  const handleResourceChange = (event) => {
+  const handleBookChange = (event) => {
     const { name, value } = event.target;
-    setResourceForm((current) => ({ ...current, [name]: value }));
+    setBookForm((current) => ({ ...current, [name]: name === "availableCopies" ? Number(value) : value }));
   };
 
-  const handleResourceSubmit = async (event) => {
+  const handleBookSubmit = async (event) => {
     event.preventDefault();
     try {
-      if (resourceForm.id) {
-        await api.put(`/resources/${resourceForm.id}`, resourceForm);
-        setMessage("Resource updated successfully.");
+      if (bookForm.id) {
+        await updateBook(bookForm.id, bookForm);
+        setMessage("Book updated successfully.");
       } else {
-        await api.post("/resources", resourceForm);
-        setMessage("Resource created successfully.");
+        await createBook(bookForm);
+        setMessage("Book added to the catalog.");
       }
-      setResourceForm({ id: null, name: "", type: "Room" });
+      setBookForm({ id: null, title: "", author: "", isbn: "", category: "", description: "", coverImage: "", availableCopies: 1 });
       loadData();
     } catch (error) {
-      setMessage(error.response?.data?.error || "Unable to save resource.");
+      setMessage(error.response?.data?.error || "Unable to save book.");
+    }
+  };
+
+  const handleEdit = (book) => {
+    setBookForm({ ...book, availableCopies: book.availableCopies ?? 1 });
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await deleteBook(id);
+      setMessage("Book removed from the catalog.");
+      loadData();
+    } catch (error) {
+      setMessage("Unable to remove this book.");
     }
   };
 
@@ -62,52 +72,53 @@ function LibrarianDashboard() {
         <div>
           <p className="eyebrow">Librarian Workspace</p>
           <h1>Hello, {user?.firstName || "Librarian"}.</h1>
-          <p>Manage library resources, review booking requests, and keep daily operations on track.</p>
+          <p>Manage the catalog, update availability, and keep each title searchable for members.</p>
         </div>
         <button className="button secondary logout-btn" onClick={handleLogout}>Logout</button>
       </header>
 
       {message ? <p className="message-banner">{message}</p> : null}
 
-      <section className="dashboard-grid">
-        <article className="dashboard-card">
-          <h2>Resources</h2>
-          <p className="metric">{resources.length}</p>
-          <p className="card-copy">Available study rooms, equipment, and library materials.</p>
-        </article>
-        <article className="dashboard-card">
-          <h2>Bookings</h2>
-          <p className="metric">{bookings.length}</p>
-          <p className="card-copy">Member booking requests currently managed by you.</p>
-        </article>
-      </section>
-
-      <section className="dashboard-card" style={{ marginTop: "1.5rem" }}>
-        <h2>Add or update a resource</h2>
-        <form onSubmit={handleResourceSubmit} className="form-grid">
-          <input className="form-input" name="name" placeholder="Resource name" value={resourceForm.name} onChange={handleResourceChange} required />
-          <input className="form-input" name="type" placeholder="Resource type" value={resourceForm.type} onChange={handleResourceChange} required />
-          <button className="button primary" type="submit">{resourceForm.id ? "Save resource" : "Create resource"}</button>
+      <section className="dashboard-card" style={{ marginBottom: "1.5rem" }}>
+        <h2>{bookForm.id ? "Edit book" : "Add a new book"}</h2>
+        <form onSubmit={handleBookSubmit} className="form-grid">
+          <input className="form-input" name="title" placeholder="Title" value={bookForm.title} onChange={handleBookChange} required />
+          <input className="form-input" name="author" placeholder="Author" value={bookForm.author} onChange={handleBookChange} required />
+          <input className="form-input" name="isbn" placeholder="ISBN" value={bookForm.isbn} onChange={handleBookChange} required />
+          <input className="form-input" name="category" placeholder="Category" value={bookForm.category} onChange={handleBookChange} required />
+          <input className="form-input" name="coverImage" placeholder="Cover image URL" value={bookForm.coverImage} onChange={handleBookChange} />
+          <input className="form-input" name="availableCopies" type="number" min="0" placeholder="Available copies" value={bookForm.availableCopies} onChange={handleBookChange} required />
+          <textarea className="form-input" name="description" placeholder="Description" value={bookForm.description} onChange={handleBookChange} rows="3" />
+          <button className="button primary" type="submit">{bookForm.id ? "Save book" : "Create book"}</button>
         </form>
       </section>
 
-      <section className="dashboard-card" style={{ marginTop: "1.5rem" }}>
-        <h2>Booking queue</h2>
+      <section className="dashboard-card">
+        <h2>Catalog overview</h2>
         <div className="table-wrap">
           <table className="data-table">
             <thead>
               <tr>
-                <th>Resource</th>
-                <th>Booked by</th>
-                <th>Status</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>ISBN</th>
+                <th>Category</th>
+                <th>Copies</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {bookings.map((booking) => (
-                <tr key={booking.id}>
-                  <td>{booking.resourceName || booking.resource?.name || "Resource"}</td>
-                  <td>{booking.memberName || booking.member?.firstName || "Member"}</td>
-                  <td>{booking.status || "PENDING"}</td>
+              {books.map((book) => (
+                <tr key={book.id}>
+                  <td>{book.title}</td>
+                  <td>{book.author}</td>
+                  <td>{book.isbn}</td>
+                  <td>{book.category}</td>
+                  <td>{book.availableCopies}</td>
+                  <td>
+                    <button type="button" className="table-action" onClick={() => handleEdit(book)}>Edit</button>
+                    <button type="button" className="table-action danger" onClick={() => handleDelete(book.id)}>Delete</button>
+                  </td>
                 </tr>
               ))}
             </tbody>

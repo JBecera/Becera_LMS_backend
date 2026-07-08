@@ -217,6 +217,78 @@
   color: #dc2626;
 }
 
+.catalog-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.catalog-cover {
+  height: 180px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #e0e7ff, #f8fafc);
+  display: grid;
+  place-items: center;
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #4338ca;
+  overflow: hidden;
+}
+
+.catalog-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.catalog-card h3 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.catalog-meta {
+  margin: 0;
+  color: #64748b;
+}
+
+.catalog-desc {
+  margin: 0;
+  color: #475569;
+  min-height: 3.5rem;
+}
+
+.catalog-footer {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.availability-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.availability-badge.available {
+  background: #ecfdf3;
+  color: #047857;
+}
+
+.availability-badge.unavailable {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.button.small {
+  width: auto;
+  padding: 0.8rem 1rem;
+}
+
 .dashboard-card p,
 .stat-card p {
   margin: 0;
