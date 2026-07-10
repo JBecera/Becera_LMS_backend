@@ -4,7 +4,6 @@ import edu.cit.becera.lrbms.entities.Book;
 import edu.cit.becera.lrbms.features.catalog.dto.BookRequest;
 import edu.cit.becera.lrbms.repositories.BookRepository;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 
 @Service
@@ -55,7 +54,7 @@ public class CatalogService {
     public void deleteBook(Long id) {
         bookRepository.deleteById(id);
     }
-
+//Reservation workflow
     public Book reserveBook(Long id) {
         Book book = bookRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Book not found"));
         if (book.getAvailableCopies() == null || book.getAvailableCopies() <= 0) {
