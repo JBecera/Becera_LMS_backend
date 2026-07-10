@@ -1,4 +1,4 @@
-package edu.cit.becera.lrbms.features.booking.controller;
+package main.java.edu.cit.becera.lrbms.features.booking.controller;
 
 import edu.cit.becera.lrbms.entities.Booking;
 import edu.cit.becera.lrbms.features.booking.dto.CreateBookingRequest;
@@ -24,7 +24,7 @@ public class BookingSliceController {
     public List<Booking> getAllBookings() {
         return bookingSliceService.getAllBookings();
     }
-
+//Booking Management Slice
     @PostMapping
     public ResponseEntity<?> createBooking(@RequestBody CreateBookingRequest request) {
         try {
