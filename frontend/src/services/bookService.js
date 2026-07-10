@@ -1,5 +1,5 @@
 import api from "./api";
-
+// Frontend catalog integration 
 export const getBooks = (query = "") => api.get(`/books${query ? `/search?query=${encodeURIComponent(query)}` : ""}`);
 
 export const createBook = (book) => api.post("/books", book);

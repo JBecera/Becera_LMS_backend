@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import { createBook, deleteBook, getBooks, updateBook } from "../services/bookService";
-
+// Frontend catalog integration 
 function LibrarianDashboard() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "null");
