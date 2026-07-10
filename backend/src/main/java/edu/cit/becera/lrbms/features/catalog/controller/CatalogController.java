@@ -1,4 +1,4 @@
-package edu.cit.becera.lrbms.features.catalog.controller;
+package main.java.edu.cit.becera.lrbms.features.catalog.controller;
 
 import edu.cit.becera.lrbms.entities.Book;
 import edu.cit.becera.lrbms.features.catalog.dto.BookRequest;
@@ -6,7 +6,7 @@ import edu.cit.becera.lrbms.features.catalog.service.CatalogService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+//Catalog CRUD implementation
 import java.util.List;
 import java.util.Map;
 
