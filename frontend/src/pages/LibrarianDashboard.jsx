@@ -1,131 +1,95 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import api from "../services/api";
-import { createBook, deleteBook, getBooks, updateBook } from "../services/bookService";
-// Frontend catalog integration 
-function LibrarianDashboard() {
-  const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+import AppLayout from "../components/layout/AppLayout";
+import StatCard from "../components/ui/StatCard";
+import Badge from "../components/ui/Badge";
+import EmptyState from "../components/ui/EmptyState";
+import { getBooks } from "../services/bookService";
+import { getTransactions } from "../services/transactionService";
+import { getReservations } from "../services/reservationService";
+import { getFines } from "../services/fineService";
 
+function LibrarianDashboard() {
+  const user = JSON.parse(localStorage.getItem("user") || "null");
   const [books, setBooks] = useState([]);
-  const [bookForm, setBookForm] = useState({ id: null, title: "", author: "", isbn: "", category: "", description: "", coverImage: "", availableCopies: 1 });
+  const [transactions, setTransactions] = useState([]);
+  const [reservations, setReservations] = useState([]);
+  const [fines, setFines] = useState([]);
   const [message, setMessage] = useState("");
 
-  const loadData = async () => {
-    try {
-      const response = await getBooks();
-      setBooks(response.data);
-    } catch (error) {
-      console.error(error);
-      setMessage("Unable to load the book catalog.");
-    }
-  };
-
   useEffect(() => {
-    loadData();
+    Promise.all([
+      getBooks().catch(() => ({ data: [] })),
+      getTransactions().catch(() => ({ data: [] })),
+      getReservations().catch(() => ({ data: [] })),
+      getFines().catch(() => ({ data: [] })),
+    ])
+      .then(([b, t, r, f]) => {
+        setBooks(b.data || []);
+        setTransactions(t.data || []);
+        setReservations(r.data || []);
+        setFines(f.data || []);
+      })
+      .catch(() => setMessage("Some dashboard data could not be loaded right now."));
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
-
-  const handleBookChange = (event) => {
-    const { name, value } = event.target;
-    setBookForm((current) => ({ ...current, [name]: name === "availableCopies" ? Number(value) : value }));
-  };
-
-  const handleBookSubmit = async (event) => {
-    event.preventDefault();
-    try {
-      if (bookForm.id) {
-        await updateBook(bookForm.id, bookForm);
-        setMessage("Book updated successfully.");
-      } else {
-        await createBook(bookForm);
-        setMessage("Book added to the catalog.");
-      }
-      setBookForm({ id: null, title: "", author: "", isbn: "", category: "", description: "", coverImage: "", availableCopies: 1 });
-      loadData();
-    } catch (error) {
-      setMessage(error.response?.data?.error || "Unable to save book.");
-    }
-  };
-
-  const handleEdit = (book) => {
-    setBookForm({ ...book, availableCopies: book.availableCopies ?? 1 });
-  };
-
-  const handleDelete = async (id) => {
-    try {
-      await deleteBook(id);
-      setMessage("Book removed from the catalog.");
-      loadData();
-    } catch (error) {
-      setMessage("Unable to remove this book.");
-    }
-  };
+  const activeLoans = transactions.filter((t) => t.status !== "RETURNED");
+  const overdueLoans = activeLoans.filter((t) => t.dueDate && new Date(t.dueDate) < new Date());
+  const pendingReservations = reservations.filter((r) => r.status === "PENDING");
+  const unpaidFines = fines.filter((f) => f.paymentStatus !== "PAID");
 
   return (
-    <div className="dashboard-page">
-      <header className="dashboard-header">
-        <div>
-          <p className="eyebrow">Librarian Workspace</p>
-          <h1>Hello, {user?.firstName || "Librarian"}.</h1>
-          <p>Manage the catalog, update availability, and keep each title searchable for members.</p>
-        </div>
-        <button className="button secondary logout-btn" onClick={handleLogout}>Logout</button>
-      </header>
+    <AppLayout
+      eyebrow="Librarian Workspace"
+      title={`Hello, ${user?.firstName || "Librarian"}.`}
+      description="Today's activity across the catalog, checkouts, reservations, and fines."
+    >
+      {message ? <p className="message-banner error">{message}</p> : null}
 
-      {message ? <p className="message-banner">{message}</p> : null}
-
-      <section className="dashboard-card" style={{ marginBottom: "1.5rem" }}>
-        <h2>{bookForm.id ? "Edit book" : "Add a new book"}</h2>
-        <form onSubmit={handleBookSubmit} className="form-grid">
-          <input className="form-input" name="title" placeholder="Title" value={bookForm.title} onChange={handleBookChange} required />
-          <input className="form-input" name="author" placeholder="Author" value={bookForm.author} onChange={handleBookChange} required />
-          <input className="form-input" name="isbn" placeholder="ISBN" value={bookForm.isbn} onChange={handleBookChange} required />
-          <input className="form-input" name="category" placeholder="Category" value={bookForm.category} onChange={handleBookChange} required />
-          <input className="form-input" name="coverImage" placeholder="Cover image URL" value={bookForm.coverImage} onChange={handleBookChange} />
-          <input className="form-input" name="availableCopies" type="number" min="0" placeholder="Available copies" value={bookForm.availableCopies} onChange={handleBookChange} required />
-          <textarea className="form-input" name="description" placeholder="Description" value={bookForm.description} onChange={handleBookChange} rows="3" />
-          <button className="button primary" type="submit">{bookForm.id ? "Save book" : "Create book"}</button>
-        </form>
+      <section className="dashboard-grid">
+        <StatCard label="Catalog titles" value={books.length} hint="Total resources on record" />
+        <StatCard label="Active loans" value={activeLoans.length} hint="Currently checked out" />
+        <StatCard label="Overdue" value={overdueLoans.length} tone={overdueLoans.length ? "danger" : ""} hint="Past due date" />
+        <StatCard label="Pending reservations" value={pendingReservations.length} tone={pendingReservations.length ? "warn" : ""} hint="Awaiting approval" />
       </section>
 
-      <section className="dashboard-card">
-        <h2>Catalog overview</h2>
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Author</th>
-                <th>ISBN</th>
-                <th>Category</th>
-                <th>Copies</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {books.map((book) => (
-                <tr key={book.id}>
-                  <td>{book.title}</td>
-                  <td>{book.author}</td>
-                  <td>{book.isbn}</td>
-                  <td>{book.category}</td>
-                  <td>{book.availableCopies}</td>
-                  <td>
-                    <button type="button" className="table-action" onClick={() => handleEdit(book)}>Edit</button>
-                    <button type="button" className="table-action danger" onClick={() => handleDelete(book.id)}>Delete</button>
-                  </td>
+      <section className="panel-card">
+        <h2>Reservation queue</h2>
+        <p className="panel-sub">The most recent requests waiting on a decision.</p>
+        {pendingReservations.length === 0 ? (
+          <EmptyState icon="reserve" title="Queue is clear" description="No reservations are waiting on approval right now." />
+        ) : (
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Resource</th>
+                  <th>Member</th>
+                  <th>Requested</th>
+                  <th>Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {pendingReservations.slice(0, 6).map((r) => (
+                  <tr key={r.id}>
+                    <td>{r.resourceTitle || r.resourceId}</td>
+                    <td>{r.memberName || r.memberId}</td>
+                    <td className="mono">{r.reservationDate}</td>
+                    <td><Badge status="pending" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
-    </div>
+
+      {unpaidFines.length > 0 ? (
+        <section className="panel-card">
+          <h2>Unpaid fines</h2>
+          <p className="panel-sub">{unpaidFines.length} member{unpaidFines.length === 1 ? "" : "s"} with an outstanding balance.</p>
+        </section>
+      ) : null}
+    </AppLayout>
   );
 }
 

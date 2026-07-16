@@ -1,11 +1,24 @@
 import "./App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
-import AdminDashboard from "./pages/AdminDashboard";
+
+import Dashboard from "./pages/Dashboard";
+import Catalog from "./pages/Catalog";
+import MyBorrowing from "./pages/MyBorrowing";
+import Reservations from "./pages/Reservations";
+import BorrowingHistory from "./pages/BorrowingHistory";
+import Fines from "./pages/Fines";
+import Account from "./pages/Account";
+
 import LibrarianDashboard from "./pages/LibrarianDashboard";
+import ManageCatalog from "./pages/ManageCatalog";
+import Transactions from "./pages/Transactions";
+import Students from "./pages/Students";
+
+import AdminDashboard from "./pages/AdminDashboard";
+import ManageAccounts from "./pages/ManageAccounts";
 
 function App() {
   return (
@@ -14,32 +27,30 @@ function App() {
         <Route path="/" element={<Register />} />
         <Route path="/login" element={<Login />} />
 
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute allowedRoles={["MEMBER"]}>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
+        {/* Member */}
+        <Route path="/dashboard" element={<ProtectedRoute allowedRoles={["MEMBER"]}><Dashboard /></ProtectedRoute>} />
+        <Route path="/catalog" element={<ProtectedRoute allowedRoles={["MEMBER"]}><Catalog /></ProtectedRoute>} />
+        <Route path="/my-borrowing" element={<ProtectedRoute allowedRoles={["MEMBER"]}><MyBorrowing /></ProtectedRoute>} />
+        <Route path="/reservations" element={<ProtectedRoute allowedRoles={["MEMBER"]}><Reservations /></ProtectedRoute>} />
+        <Route path="/history" element={<ProtectedRoute allowedRoles={["MEMBER"]}><BorrowingHistory /></ProtectedRoute>} />
+        <Route path="/fines" element={<ProtectedRoute allowedRoles={["MEMBER"]}><Fines /></ProtectedRoute>} />
 
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute allowedRoles={["ADMIN"]}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
+        {/* Librarian */}
+        <Route path="/librarian" element={<ProtectedRoute allowedRoles={["LIBRARIAN"]}><LibrarianDashboard /></ProtectedRoute>} />
+        <Route path="/librarian/catalog" element={<ProtectedRoute allowedRoles={["LIBRARIAN"]}><ManageCatalog /></ProtectedRoute>} />
+        <Route path="/librarian/transactions" element={<ProtectedRoute allowedRoles={["LIBRARIAN"]}><Transactions /></ProtectedRoute>} />
+        <Route path="/librarian/reservations" element={<ProtectedRoute allowedRoles={["LIBRARIAN"]}><Reservations /></ProtectedRoute>} />
+        <Route path="/librarian/students" element={<ProtectedRoute allowedRoles={["LIBRARIAN"]}><Students /></ProtectedRoute>} />
+        <Route path="/librarian/fines" element={<ProtectedRoute allowedRoles={["LIBRARIAN"]}><Fines /></ProtectedRoute>} />
 
-        <Route
-          path="/librarian"
-          element={
-            <ProtectedRoute allowedRoles={["LIBRARIAN"]}>
-              <LibrarianDashboard />
-            </ProtectedRoute>
-          }
-        />
+        {/* Admin */}
+        <Route path="/admin" element={<ProtectedRoute allowedRoles={["ADMIN"]}><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin/accounts" element={<ProtectedRoute allowedRoles={["ADMIN"]}><ManageAccounts /></ProtectedRoute>} />
+
+        {/* Shared */}
+        <Route path="/account" element={<ProtectedRoute allowedRoles={["MEMBER", "LIBRARIAN", "ADMIN"]}><Account /></ProtectedRoute>} />
+
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   );

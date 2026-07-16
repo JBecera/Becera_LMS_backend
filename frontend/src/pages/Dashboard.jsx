@@ -1,94 +1,120 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { getBooks, reserveBook } from "../services/bookService";
-// Frontend catalog integration 
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import AppLayout from "../components/layout/AppLayout";
+import StatCard from "../components/ui/StatCard";
+import Badge from "../components/ui/Badge";
+import Stamp from "../components/ui/Stamp";
+import EmptyState from "../components/ui/EmptyState";
+import { getMemberTransactions } from "../services/transactionService";
+import { getMemberReservations } from "../services/reservationService";
+import { getMemberFines } from "../services/fineService";
+
+function daysUntil(dateString) {
+  if (!dateString) return null;
+  const diff = new Date(dateString) - new Date();
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
+
 function Dashboard() {
-  const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user")) || {};
-  const [books, setBooks] = useState([]);
-  const [search, setSearch] = useState("");
+  const [transactions, setTransactions] = useState([]);
+  const [reservations, setReservations] = useState([]);
+  const [fines, setFines] = useState([]);
   const [message, setMessage] = useState("");
 
-  const loadBooks = async (query = "") => {
-    try {
-      const response = await getBooks(query);
-      setBooks(response.data);
-    } catch (error) {
-      setMessage("Unable to load the catalog right now.");
-    }
-  };
-
   useEffect(() => {
-    loadBooks();
-  }, []);
+    if (!user.id) return;
+    Promise.all([
+      getMemberTransactions(user.id).catch(() => ({ data: [] })),
+      getMemberReservations(user.id).catch(() => ({ data: [] })),
+      getMemberFines(user.id).catch(() => ({ data: [] })),
+    ])
+      .then(([t, r, f]) => {
+        setTransactions(t.data || []);
+        setReservations(r.data || []);
+        setFines(f.data || []);
+      })
+      .catch(() => setMessage("Some dashboard data could not be loaded right now."));
+  }, [user.id]);
 
-  const filteredBooks = useMemo(() => {
-    const query = search.toLowerCase();
-    if (!query) return books;
-    return books.filter((book) => `${book.title} ${book.author}`.toLowerCase().includes(query));
-  }, [books, search]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
-
-  const handleReserve = async (bookId) => {
-    try {
-      await reserveBook(bookId);
-      setMessage("Reservation request recorded. Availability is updated instantly.");
-      loadBooks(search);
-    } catch (error) {
-      setMessage(error.response?.data?.error || "Unable to reserve this title right now.");
-    }
-  };
+  const activeLoans = transactions.filter((t) => t.status !== "RETURNED");
+  const overdueLoans = activeLoans.filter((t) => daysUntil(t.dueDate) < 0);
+  const pendingReservations = reservations.filter((r) => r.status === "PENDING");
+  const unpaidFines = fines.filter((f) => f.paymentStatus !== "PAID");
+  const totalOwed = unpaidFines.reduce((sum, f) => sum + (Number(f.amount) || 0), 0);
 
   return (
-    <div className="dashboard-page">
-      <header className="dashboard-header">
-        <div>
-          <p className="eyebrow">Member Catalog</p>
-          <h1>Welcome back, {user?.firstName || "Library User"}.</h1>
-          <p>Search the catalog, review real-time availability, and reserve books before they are taken.</p>
-        </div>
-        <button className="button secondary logout-btn" onClick={handleLogout}>Logout</button>
-      </header>
-
-      {message ? <p className="message-banner">{message}</p> : null}
-
-      <section className="dashboard-card" style={{ marginBottom: "1.5rem" }}>
-        <h2>Search the catalog</h2>
-        <input
-          className="form-input"
-          placeholder="Search by title or author"
-          value={search}
-          onChange={(event) => {
-            setSearch(event.target.value);
-            loadBooks(event.target.value);
-          }}
-        />
-      </section>
+    <AppLayout
+      eyebrow="Member Dashboard"
+      title={`Welcome back, ${user.firstName || "Reader"}.`}
+      description="A quick look at what you've borrowed, what's due, and what's waiting on your shelf."
+    >
+      {message ? <p className="message-banner error">{message}</p> : null}
 
       <section className="dashboard-grid">
-        {filteredBooks.map((book) => (
-          <article key={book.id} className="dashboard-card catalog-card">
-            <div className="catalog-cover">{book.coverImage ? <img src={book.coverImage} alt={book.title} /> : <span>{book.title?.[0] || "B"}</span>}</div>
-            <h3>{book.title}</h3>
-            <p className="catalog-meta">{book.author}</p>
-            <p className="catalog-meta">{book.category}</p>
-            <p className="catalog-desc">{book.description || "No description provided yet."}</p>
-            <div className="catalog-footer">
-              <span className={`availability-badge ${book.availableCopies > 0 ? "available" : "unavailable"}`}>
-                {book.availableCopies > 0 ? `${book.availableCopies} available` : "Out of stock"}
-              </span>
-              <button className="button primary small" onClick={() => handleReserve(book.id)} disabled={book.availableCopies <= 0}>
-                Reserve
-              </button>
-            </div>
-          </article>
-        ))}
+        <StatCard label="Books on loan" value={activeLoans.length} hint="Limit of 3 at a time" />
+        <StatCard
+          label="Overdue"
+          value={overdueLoans.length}
+          hint={overdueLoans.length ? "Return these as soon as possible" : "You're all caught up"}
+          tone={overdueLoans.length ? "danger" : ""}
+        />
+        <StatCard label="Pending reservations" value={pendingReservations.length} hint="Awaiting librarian approval" tone="warn" />
+        <StatCard label="Fines due" value={`₱${totalOwed.toFixed(2)}`} hint={unpaidFines.length ? "Settle at the front desk" : "Nothing outstanding"} tone={totalOwed > 0 ? "danger" : "accent"} />
       </section>
-    </div>
+
+      <section className="panel-card">
+        <h2>Currently borrowed</h2>
+        <p className="panel-sub">Due dates count down from today — return before they turn red.</p>
+
+        {activeLoans.length === 0 ? (
+          <EmptyState icon="borrow" title="No active loans" description="Reserve a title from the catalog to get started." />
+        ) : (
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Resource</th>
+                  <th>Checked out</th>
+                  <th>Due</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activeLoans.map((t) => {
+                  const remaining = daysUntil(t.dueDate);
+                  return (
+                    <tr key={t.id}>
+                      <td>{t.resourceTitle || t.resourceId}</td>
+                      <td className="mono">{t.checkOutDate}</td>
+                      <td className="mono">{t.dueDate}</td>
+                      <td>
+                        <Badge status={remaining < 0 ? "overdue" : "reserved"}>
+                          {remaining < 0 ? `${Math.abs(remaining)}d overdue` : `${remaining}d left`}
+                        </Badge>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {overdueLoans.length > 0 ? (
+        <section className="panel-card" style={{ display: "flex", gap: "1.25rem", alignItems: "center" }}>
+          <Stamp value={overdueLoans.length} label="Overdue" tone="danger" />
+          <div>
+            <h2 style={{ marginBottom: "0.35rem" }}>Return overdue items to keep borrowing</h2>
+            <p className="panel-sub" style={{ marginBottom: 0 }}>
+              Accounts with overdue items or unpaid fines are restricted from new checkouts and reservations.{" "}
+              <Link to="/history">View your full history</Link>.
+            </p>
+          </div>
+        </section>
+      ) : null}
+    </AppLayout>
   );
 }
 
