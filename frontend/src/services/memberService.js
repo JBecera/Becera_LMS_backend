@@ -3,6 +3,9 @@ import api, { authApi } from "./api";
 // GET ALL
 export const getMembers = () => api.get("/members");
 
+// GET ONE
+export const getMember = (id) => api.get(`/members/${id}`);
+
 // REGISTER
 export const addMember = (member) => api.post("/members", member);
 
