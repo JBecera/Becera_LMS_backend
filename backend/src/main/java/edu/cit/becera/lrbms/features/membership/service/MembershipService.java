@@ -3,7 +3,12 @@ package edu.cit.becera.lrbms.features.membership.service;
 import edu.cit.becera.lrbms.entities.Member;
 import edu.cit.becera.lrbms.features.membership.dto.CreateMemberRequest;
 import edu.cit.becera.lrbms.repositories.MemberRepository;
+import edu.cit.becera.lrbms.security.CurrentUser;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,9 +17,12 @@ import java.util.Optional;
 @Service
 public class MembershipService {
     private final MemberRepository memberRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public MembershipService(MemberRepository memberRepository) {
+    @Autowired
+    public MembershipService(MemberRepository memberRepository, PasswordEncoder passwordEncoder) {
         this.memberRepository = memberRepository;
+        this.passwordEncoder = passwordEncoder != null ? passwordEncoder : new BCryptPasswordEncoder();
     }
 
     public List<Member> getAllMembers() {
@@ -28,7 +36,12 @@ public class MembershipService {
                 .toList();
     }
 
-    public Member createMember(CreateMemberRequest request) {
+    /**
+     * creatorRole is null for anonymous self-registration. Only an ADMIN caller may request a
+     * role other than MEMBER (creating LIBRARIAN/ADMIN accounts) — everyone else is forced to MEMBER,
+     * regardless of what the request body asks for.
+     */
+    public Member createMember(CreateMemberRequest request, String creatorRole) {
         if (request == null) {
             throw new IllegalArgumentException("Member data is required");
         }
@@ -45,12 +58,66 @@ public class MembershipService {
             throw new IllegalArgumentException("Last name is required");
         }
 
+        String role = "ADMIN".equalsIgnoreCase(creatorRole) ? normalizeRole(request.getRole()) : "MEMBER";
+
         Member member = new Member();
         member.setFirstName(request.getFirstName());
         member.setLastName(request.getLastName());
-        member.setEmail(request.getEmail());
-        member.setPassword(request.getPassword());
-        member.setRole(normalizeRole(request.getRole()));
+        member.setEmail(request.getEmail().trim().toLowerCase());
+        member.setPassword(hashPassword(request.getPassword()));
+        member.setRole(role);
+        member.setPhoneNumber(request.getPhoneNumber());
+        member.setAddress(request.getAddress());
+
+        Member saved;
+        try {
+            saved = memberRepository.save(member);
+        } catch (DataIntegrityViolationException ex) {
+            throw new IllegalArgumentException("A user with this email already exists", ex);
+        }
+
+        if ("MEMBER".equals(saved.getRole()) && saved.getStudentId() == null) {
+            saved.setStudentId(String.format("STU-%06d", saved.getId()));
+            saved = memberRepository.save(saved);
+        }
+
+        return saved;
+    }
+
+    public Optional<Member> getMember(Long id) {
+        return memberRepository.findById(id);
+    }
+
+    public Member updateMember(Long id, CreateMemberRequest request, CurrentUser requester) {
+        Member member = memberRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Member not found"));
+
+        boolean isSelf = requester != null && requester.owns(id);
+        boolean isStaff = requester != null && requester.isStaff();
+        if (!isSelf && !isStaff) {
+            throw new AccessDeniedException("Not allowed to update this account");
+        }
+
+        if (request.getFirstName() != null && !request.getFirstName().isBlank()) {
+            member.setFirstName(request.getFirstName());
+        }
+        if (request.getLastName() != null && !request.getLastName().isBlank()) {
+            member.setLastName(request.getLastName());
+        }
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            member.setEmail(request.getEmail().trim().toLowerCase());
+        }
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            member.setPassword(hashPassword(request.getPassword()));
+        }
+        if (request.getPhoneNumber() != null) {
+            member.setPhoneNumber(request.getPhoneNumber());
+        }
+        if (request.getAddress() != null) {
+            member.setAddress(request.getAddress());
+        }
+        if (requester != null && requester.isAdmin() && request.getRole() != null && !request.getRole().isBlank()) {
+            member.setRole(normalizeRole(request.getRole()));
+        }
 
         try {
             return memberRepository.save(member);
@@ -59,22 +126,18 @@ public class MembershipService {
         }
     }
 
-    public Optional<Member> getMember(Long id) {
-        return memberRepository.findById(id);
-    }
-
-    public Member updateMember(Long id, CreateMemberRequest request) {
-        Member member = memberRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Member not found"));
-        member.setFirstName(request.getFirstName());
-        member.setLastName(request.getLastName());
-        member.setEmail(request.getEmail());
-        member.setPassword(request.getPassword());
-        member.setRole(normalizeRole(request.getRole()));
-        return memberRepository.save(member);
-    }
-
     public void deleteMember(Long id) {
         memberRepository.deleteById(id);
+    }
+
+    private String hashPassword(String password) {
+        if (password == null || password.isBlank()) {
+            return "";
+        }
+        if (passwordEncoder != null) {
+            return passwordEncoder.encode(password);
+        }
+        return password;
     }
 
     private String normalizeRole(String role) {

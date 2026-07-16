@@ -3,13 +3,15 @@ package edu.cit.becera.lrbms.features.membership.controller;
 import edu.cit.becera.lrbms.entities.Member;
 import edu.cit.becera.lrbms.features.membership.dto.CreateMemberRequest;
 import edu.cit.becera.lrbms.features.membership.service.MembershipService;
+import edu.cit.becera.lrbms.security.CurrentUser;
+import edu.cit.becera.lrbms.security.SecurityUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/members")
@@ -27,8 +29,14 @@ public class MembershipController {
     }
 
     @GetMapping("/{id}")
-    public Optional<Member> getMember(@PathVariable Long id) {
-        return membershipService.getMember(id);
+    public ResponseEntity<?> getMember(@PathVariable Long id) {
+        CurrentUser currentUser = SecurityUtils.currentUser();
+        if (currentUser == null || (!currentUser.owns(id) && !currentUser.isStaff())) {
+            throw new AccessDeniedException("Not allowed to view this account");
+        }
+        return membershipService.getMember(id)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/role/{role}")
@@ -39,7 +47,9 @@ public class MembershipController {
     @PostMapping
     public ResponseEntity<?> createMember(@RequestBody CreateMemberRequest request) {
         try {
-            Member saved = membershipService.createMember(request);
+            CurrentUser currentUser = SecurityUtils.currentUser();
+            String creatorRole = currentUser != null ? currentUser.role() : null;
+            Member saved = membershipService.createMember(request, creatorRole);
             return ResponseEntity.status(HttpStatus.CREATED).body(saved);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
@@ -49,9 +59,12 @@ public class MembershipController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateMember(@PathVariable Long id, @RequestBody CreateMemberRequest request) {
         try {
-            return ResponseEntity.ok(membershipService.updateMember(id, request));
+            CurrentUser currentUser = SecurityUtils.currentUser();
+            return ResponseEntity.ok(membershipService.updateMember(id, request, currentUser));
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
+        } catch (AccessDeniedException ex) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", ex.getMessage()));
         }
     }
 

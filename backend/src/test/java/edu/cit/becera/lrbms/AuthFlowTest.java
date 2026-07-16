@@ -1,13 +1,18 @@
 package edu.cit.becera.lrbms;
 
 import edu.cit.becera.lrbms.entities.Member;
+import edu.cit.becera.lrbms.features.auth.dto.LoginRequest;
+import edu.cit.becera.lrbms.features.auth.model.AuthResponse;
+import edu.cit.becera.lrbms.features.auth.service.AuthService;
+import edu.cit.becera.lrbms.features.membership.dto.CreateMemberRequest;
+import edu.cit.becera.lrbms.features.membership.service.MembershipService;
 import edu.cit.becera.lrbms.repositories.MemberRepository;
-import edu.cit.becera.lrbms.services.MemberService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.Optional;
 
@@ -22,27 +27,42 @@ class AuthFlowTest {
     @Mock
     private MemberRepository memberRepository;
 
-    private MemberService memberService;
+    private MembershipService membershipService;
+    private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        memberService = new MemberService(memberRepository);
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        membershipService = new MembershipService(memberRepository, encoder);
+        authService = new AuthService(memberRepository, encoder);
     }
 
     @Test
     void adminLoginShouldResolveRoleAndPersistAccount() {
-        Member admin = new Member();
-        admin.setFirstName("System");
-        admin.setLastName("Admin");
-        admin.setEmail("admin-role-flow@library.test");
-        admin.setPassword("password123");
-        admin.setRole("admin");
+        when(memberRepository.save(any(Member.class))).thenAnswer(invocation -> {
+            Member member = invocation.getArgument(0);
+            if (member.getId() == null) {
+                member.setId(1L);
+            }
+            return member;
+        });
 
-        when(memberRepository.save(any(Member.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(memberRepository.findByEmail("admin-role-flow@library.test")).thenReturn(Optional.of(admin));
+        CreateMemberRequest request = new CreateMemberRequest();
+        request.setFirstName("System");
+        request.setLastName("Admin");
+        request.setEmail("admin-role-flow@library.test");
+        request.setPassword("password123");
+        request.setRole("admin");
 
-        Member saved = memberService.saveMember(admin);
-        Member authenticated = memberService.login("admin-role-flow@library.test", "password123");
+        // Only an ADMIN caller may create another admin/librarian account (FR-004/FR-005).
+        Member saved = membershipService.createMember(request, "ADMIN");
+
+        when(memberRepository.findByEmail("admin-role-flow@library.test")).thenReturn(Optional.of(saved));
+
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setEmail("admin-role-flow@library.test");
+        loginRequest.setPassword("password123");
+        AuthResponse authenticated = authService.login(loginRequest);
 
         assertNotNull(saved);
         assertNotNull(authenticated);

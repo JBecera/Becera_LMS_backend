@@ -4,6 +4,9 @@ import edu.cit.becera.lrbms.entities.Member;
 import edu.cit.becera.lrbms.features.auth.dto.LoginRequest;
 import edu.cit.becera.lrbms.features.auth.model.AuthResponse;
 import edu.cit.becera.lrbms.repositories.MemberRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -11,9 +14,12 @@ import java.util.Optional;
 @Service
 public class AuthService {
     private final MemberRepository memberRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public AuthService(MemberRepository memberRepository) {
+    @Autowired
+    public AuthService(MemberRepository memberRepository, PasswordEncoder passwordEncoder) {
         this.memberRepository = memberRepository;
+        this.passwordEncoder = passwordEncoder != null ? passwordEncoder : new BCryptPasswordEncoder();
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -30,7 +36,10 @@ public class AuthService {
         }
 
         Member authenticated = candidate.get();
-        if (!normalizedPassword.equals(authenticated.getPassword())) {
+        String storedPassword = authenticated.getPassword();
+        boolean passwordMatches = passwordEncoder.matches(normalizedPassword, storedPassword);
+
+        if (!passwordMatches) {
             throw new IllegalArgumentException("Invalid credentials");
         }
 

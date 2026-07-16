@@ -1,8 +1,8 @@
 package edu.cit.becera.lrbms;
 
 import edu.cit.becera.lrbms.entities.Member;
+import edu.cit.becera.lrbms.features.membership.service.MembershipService;
 import edu.cit.becera.lrbms.repositories.MemberRepository;
-import edu.cit.becera.lrbms.services.MemberService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,11 +20,11 @@ class MemberServiceTest {
     @Mock
     private MemberRepository memberRepository;
 
-    private MemberService memberService;
+    private MembershipService membershipService;
 
     @BeforeEach
     void setUp() {
-        memberService = new MemberService(memberRepository);
+        membershipService = new MembershipService(memberRepository, null);
     }
 
     @Test
@@ -38,7 +38,7 @@ class MemberServiceTest {
 
         when(memberRepository.findAll()).thenReturn(List.of(admin, librarian, member));
 
-        List<Member> result = memberService.getMembersByRole("LIBRARIAN");
+        List<Member> result = membershipService.getMembersByRole("LIBRARIAN");
 
         assertEquals(1, result.size());
         assertEquals("LIBRARIAN", result.get(0).getRole());

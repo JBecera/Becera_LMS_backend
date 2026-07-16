@@ -1,6 +1,9 @@
 package edu.cit.becera.lrbms.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "members")
@@ -9,6 +12,9 @@ public class Member {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "student_id", unique = true)
+    private String studentId;
 
     @Column(name = "first_name")
     private String firstName;
@@ -19,10 +25,19 @@ public class Member {
     @Column(unique = true)
     private String email;
 
+    @JsonIgnore
     private String password;
 
     @Column(name = "role", nullable = false)
     private String role = "MEMBER";
+
+    @Column(name = "phone_number")
+    private String phoneNumber;
+
+    private String address;
+
+    @Column(name = "date_registered")
+    private LocalDate dateRegistered = LocalDate.now();
 
     public Member() {
     }
@@ -42,6 +57,14 @@ public class Member {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getStudentId() {
+        return studentId;
+    }
+
+    public void setStudentId(String studentId) {
+        this.studentId = studentId;
     }
 
     public String getFirstName() {
@@ -82,5 +105,29 @@ public class Member {
 
     public void setRole(String role) {
         this.role = role == null || role.isBlank() ? "MEMBER" : role;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public LocalDate getDateRegistered() {
+        return dateRegistered;
+    }
+
+    public void setDateRegistered(LocalDate dateRegistered) {
+        this.dateRegistered = dateRegistered;
     }
 }

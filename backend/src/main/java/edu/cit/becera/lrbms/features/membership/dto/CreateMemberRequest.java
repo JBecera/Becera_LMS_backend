@@ -6,6 +6,8 @@ public class CreateMemberRequest {
     private String email;
     private String password;
     private String role;
+    private String phoneNumber;
+    private String address;
 
     public String getFirstName() { return firstName; }
     public void setFirstName(String firstName) { this.firstName = firstName; }
@@ -17,4 +19,8 @@ public class CreateMemberRequest {
     public void setPassword(String password) { this.password = password; }
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+    public String getPhoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
 }

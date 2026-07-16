@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
@@ -21,14 +23,14 @@ class AuthServiceTest {
         MemberRepository repository = mock(MemberRepository.class);
         Member member = new Member();
         member.setEmail("jane@example.com");
-        member.setPassword("secret123");
+        member.setPassword(new BCryptPasswordEncoder().encode("secret123"));
         member.setFirstName("Jane");
         member.setLastName("Doe");
         member.setRole("MEMBER");
 
         when(repository.findByEmail("jane@example.com")).thenReturn(java.util.Optional.of(member));
 
-        AuthService service = new AuthService(repository);
+        AuthService service = new AuthService(repository, null);
         LoginRequest request = new LoginRequest();
         request.setEmail("  JANE@EXAMPLE.COM  ");
         request.setPassword(" secret123 ");
