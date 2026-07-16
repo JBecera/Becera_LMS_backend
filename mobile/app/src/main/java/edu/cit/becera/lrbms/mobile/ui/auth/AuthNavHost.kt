@@ -4,24 +4,26 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import edu.cit.becera.lrbms.mobile.ui.dashboard.DashboardScreen
+import edu.cit.becera.lrbms.mobile.ui.main.MemberHomeScreen
 
 @Composable
-fun AuthNavHost() {
+fun AuthNavHost(startLoggedIn: Boolean) {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "login") {
+    NavHost(navController = navController, startDestination = if (startLoggedIn) "home" else "login") {
         composable("login") {
             LoginScreen(
                 onNavigateToRegister = { navController.navigate("register") },
-                onNavigateToDashboard = { navController.navigate("dashboard") }
+                onNavigateToDashboard = { navController.navigate("home") { popUpTo("login") { inclusive = true } } }
             )
         }
         composable("register") {
             RegisterScreen(onNavigateToLogin = { navController.popBackStack() })
         }
-        composable("dashboard") {
-            DashboardScreen(onLogout = { navController.navigate("login") { popUpTo("login") { inclusive = true } } })
+        composable("home") {
+            MemberHomeScreen(
+                onSignedOut = { navController.navigate("login") { popUpTo("home") { inclusive = true } } }
+            )
         }
     }
 }
