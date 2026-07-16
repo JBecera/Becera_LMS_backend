@@ -1,4 +1,4 @@
-package main.java.edu.cit.becera.lrbms.features.catalog.controller;
+package edu.cit.becera.lrbms.features.catalog.controller;
 
 import edu.cit.becera.lrbms.entities.Book;
 import edu.cit.becera.lrbms.features.catalog.dto.BookRequest;
@@ -52,16 +52,5 @@ public class CatalogController {
     public ResponseEntity<?> deleteBook(@PathVariable Long id) {
         catalogService.deleteBook(id);
         return ResponseEntity.ok(Map.of("message", "Book removed successfully"));
-    }
-
-    @PostMapping("/{id}/reserve")
-    public ResponseEntity<?> reserveBook(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(catalogService.reserveBook(id));
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", ex.getMessage()));
-        } catch (IllegalStateException ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
-        }
     }
 }

@@ -54,15 +54,6 @@ public class CatalogService {
     public void deleteBook(Long id) {
         bookRepository.deleteById(id);
     }
-//Reservation workflow
-    public Book reserveBook(Long id) {
-        Book book = bookRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Book not found"));
-        if (book.getAvailableCopies() == null || book.getAvailableCopies() <= 0) {
-            throw new IllegalStateException("No copies available for reservation");
-        }
-        book.setAvailableCopies(book.getAvailableCopies() - 1);
-        return bookRepository.save(book);
-    }
 
     private void validateBook(BookRequest request) {
         if (request == null) {
