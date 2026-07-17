@@ -15,7 +15,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/fines")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174"})
 public class FineController {
     private final FineService fineService;
 

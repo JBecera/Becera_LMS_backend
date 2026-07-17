@@ -15,7 +15,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/members")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174"})
 public class MembershipController {
     private final MembershipService membershipService;
 
