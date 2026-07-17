@@ -14,18 +14,21 @@ import java.util.Date;
 public class JwtService {
 
     private final SecretKey key;
-    private final long expirationMillis;
+    private final long accessExpirationMillis;
+    private final long refreshExpirationMillis;
 
     public JwtService(
-            @Value("${lrbms.jwt.secret:lrbms-development-secret-key-change-me-in-production-0123456789}") String secret,
-            @Value("${lrbms.jwt.expiration-ms:86400000}") long expirationMillis) {
+            @Value("${lrbms.jwt.secret}") String secret,
+            @Value("${lrbms.jwt.access-expiration-ms}") long accessExpirationMillis,
+            @Value("${lrbms.jwt.refresh-expiration-ms}") long refreshExpirationMillis) {
         this.key = Keys.hmacShaKeyFor(secret.getBytes());
-        this.expirationMillis = expirationMillis;
+        this.accessExpirationMillis = accessExpirationMillis;
+        this.refreshExpirationMillis = refreshExpirationMillis;
     }
 
     public String generateToken(Long memberId, String role) {
         Date now = new Date();
-        Date expiry = new Date(now.getTime() + expirationMillis);
+        Date expiry = new Date(now.getTime() + accessExpirationMillis);
         return Jwts.builder()
                 .setSubject(String.valueOf(memberId))
                 .claim("role", role)

@@ -1,0 +1,24 @@
+{
+  "properties": [
+    {
+      "name": "app.frontend.url",
+      "type": "java.lang.String",
+      "description": "URL of the frontend application, used to build the CORS allowed-origins list."
+    },
+    {
+      "name": "lrbms.jwt.secret",
+      "type": "java.lang.String",
+      "description": "Signing key used to sign and verify JWT access tokens."
+    },
+    {
+      "name": "lrbms.jwt.access-expiration-ms",
+      "type": "java.lang.Long",
+      "description": "Lifetime of an access token, in milliseconds."
+    },
+    {
+      "name": "lrbms.jwt.refresh-expiration-ms",
+      "type": "java.lang.Long",
+      "description": "Lifetime of a refresh token, in milliseconds."
+    }
+  ]
+}
