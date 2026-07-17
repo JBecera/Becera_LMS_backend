@@ -1,5 +1,7 @@
 import axios from "axios";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
 const COLD_START_RETRIES = 2;
 const COLD_START_RETRY_DELAY_MS = 2000;
 
@@ -27,7 +29,7 @@ const retryOnColdStart = async (error) => {
 };
 
 const api = axios.create({
-  baseURL: "http://localhost:8080/api",
+  baseURL: API_BASE_URL,
   timeout: 5000,
 });
 
@@ -42,7 +44,7 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use((response) => response, retryOnColdStart);
 
 export const authApi = axios.create({
-  baseURL: "http://localhost:8080/api",
+  baseURL: API_BASE_URL,
   timeout: 5000,
 });
 
