@@ -58,6 +58,7 @@ public class SecurityConfig {
                 // Preflight requests never carry credentials - must be allowed regardless of the target's rules
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // Public
+                .requestMatchers(HttpMethod.GET, "/").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/members").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/books", "/api/books/search").permitAll()
