@@ -1,6 +1,7 @@
 package edu.cit.becera.lrbms.config;
 
 import edu.cit.becera.lrbms.repositories.MemberRepository;
+import edu.cit.becera.lrbms.util.AppClock;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -30,7 +31,7 @@ public class RoleDatabaseInitializer implements ApplicationRunner {
         jdbcTemplate.execute("ALTER TABLE members ADD COLUMN IF NOT EXISTS address VARCHAR(255)");
         jdbcTemplate.execute("ALTER TABLE members ADD COLUMN IF NOT EXISTS date_registered DATE");
         jdbcTemplate.execute("UPDATE members SET role = 'MEMBER' WHERE role IS NULL");
-        jdbcTemplate.execute("UPDATE members SET date_registered = CURRENT_DATE WHERE date_registered IS NULL");
+        jdbcTemplate.update("UPDATE members SET date_registered = ? WHERE date_registered IS NULL", AppClock.today());
 
         ensureAccount("admin@library.test", "Admin", "User", "admin123", "ADMIN");
         ensureAccount("librarian@library.test", "Library", "Staff", "librarian123", "LIBRARIAN");
@@ -74,11 +75,12 @@ public class RoleDatabaseInitializer implements ApplicationRunner {
         }
 
         jdbcTemplate.update(
-                "INSERT INTO members (email, first_name, last_name, password, role, date_registered) VALUES (?, ?, ?, ?, ?, CURRENT_DATE)",
+                "INSERT INTO members (email, first_name, last_name, password, role, date_registered) VALUES (?, ?, ?, ?, ?, ?)",
                 email,
                 firstName,
                 lastName,
                 hashed,
-                role);
+                role,
+                AppClock.today());
     }
 }

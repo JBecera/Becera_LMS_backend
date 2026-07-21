@@ -1,6 +1,7 @@
 package edu.cit.becera.lrbms.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import edu.cit.becera.lrbms.util.AppClock;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
@@ -37,7 +38,7 @@ public class Member {
     private String address;
 
     @Column(name = "date_registered")
-    private LocalDate dateRegistered = LocalDate.now();
+    private LocalDate dateRegistered = AppClock.today();
 
     public Member() {
     }

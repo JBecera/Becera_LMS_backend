@@ -13,6 +13,7 @@ import edu.cit.becera.lrbms.repositories.MemberRepository;
 import edu.cit.becera.lrbms.repositories.ReservationRepository;
 import edu.cit.becera.lrbms.repositories.TransactionRepository;
 import edu.cit.becera.lrbms.security.CurrentUser;
+import edu.cit.becera.lrbms.util.AppClock;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -100,7 +101,7 @@ public class TransactionService {
         }
 
         List<Transaction> activeLoans = transactionRepository.findByMemberAndStatus(member, "ACTIVE");
-        boolean hasOverdue = activeLoans.stream().anyMatch(t -> t.getDueDate().isBefore(LocalDate.now()));
+        boolean hasOverdue = activeLoans.stream().anyMatch(t -> t.getDueDate().isBefore(AppClock.today()));
         if (hasOverdue) {
             throw new IllegalStateException("Member has overdue items and cannot borrow additional items");
         }
@@ -117,7 +118,7 @@ public class TransactionService {
     }
 
     private void validateDueDate(LocalDate dueDate) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = AppClock.today();
         if (!dueDate.isAfter(today)) {
             throw new IllegalArgumentException("Return date must be after the borrow date");
         }
@@ -133,7 +134,7 @@ public class TransactionService {
         Transaction transaction = new Transaction();
         transaction.setMember(member);
         transaction.setBook(book);
-        transaction.setCheckOutDate(LocalDate.now());
+        transaction.setCheckOutDate(AppClock.today());
         transaction.setDueDate(dueDate);
         transaction.setStatus("ACTIVE");
         transaction = transactionRepository.save(transaction);
@@ -154,7 +155,7 @@ public class TransactionService {
             throw new IllegalStateException("This item has already been returned");
         }
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = AppClock.today();
         transaction.setCheckInDate(today);
         transaction.setStatus("RETURNED");
         transaction = transactionRepository.save(transaction);

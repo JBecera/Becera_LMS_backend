@@ -11,10 +11,10 @@ import edu.cit.becera.lrbms.repositories.MemberRepository;
 import edu.cit.becera.lrbms.repositories.ReservationRepository;
 import edu.cit.becera.lrbms.repositories.TransactionRepository;
 import edu.cit.becera.lrbms.security.CurrentUser;
+import edu.cit.becera.lrbms.util.AppClock;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -60,7 +60,7 @@ public class ReservationService {
             throw new IllegalStateException("Member has unpaid fines and cannot make new reservations");
         }
         boolean hasOverdue = transactionRepository.findByMemberAndStatus(member, "ACTIVE").stream()
-                .anyMatch(t -> t.getDueDate().isBefore(LocalDate.now()));
+                .anyMatch(t -> t.getDueDate().isBefore(AppClock.today()));
         if (hasOverdue) {
             throw new IllegalStateException("Member has overdue items and cannot make new reservations");
         }
@@ -74,7 +74,7 @@ public class ReservationService {
         Reservation reservation = new Reservation();
         reservation.setMember(member);
         reservation.setBook(book);
-        reservation.setReservationDate(LocalDate.now());
+        reservation.setReservationDate(AppClock.today());
         reservation.setStatus("PENDING");
         reservation = reservationRepository.save(reservation);
 

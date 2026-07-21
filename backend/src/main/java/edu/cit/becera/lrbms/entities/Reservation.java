@@ -1,5 +1,6 @@
 package edu.cit.becera.lrbms.entities;
 
+import edu.cit.becera.lrbms.util.AppClock;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
@@ -21,7 +22,7 @@ public class Reservation {
     private Book book;
 
     @Column(name = "reservation_date", nullable = false)
-    private LocalDate reservationDate = LocalDate.now();
+    private LocalDate reservationDate = AppClock.today();
 
     @Column(nullable = false)
     private String status = "PENDING";

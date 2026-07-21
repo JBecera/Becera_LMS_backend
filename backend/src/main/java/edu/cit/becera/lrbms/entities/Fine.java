@@ -1,5 +1,6 @@
 package edu.cit.becera.lrbms.entities;
 
+import edu.cit.becera.lrbms.util.AppClock;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
@@ -30,7 +31,7 @@ public class Fine {
     private String paymentStatus = "UNPAID";
 
     @Column(name = "date_issued", nullable = false)
-    private LocalDate dateIssued = LocalDate.now();
+    private LocalDate dateIssued = AppClock.today();
 
     public Long getId() {
         return id;
