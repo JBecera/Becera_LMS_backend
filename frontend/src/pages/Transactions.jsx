@@ -25,7 +25,7 @@ function Transactions() {
   const [members, setMembers] = useState([]);
   const [books, setBooks] = useState([]);
   const [form, setForm] = useState({ memberId: "", resourceId: "", dueDate: defaultDueDate() });
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(null);
 
   const load = () => {
     Promise.all([
@@ -49,30 +49,30 @@ function Transactions() {
   const handleCheckout = async (event) => {
     event.preventDefault();
     if (!form.memberId || !form.resourceId) {
-      setMessage("Choose a member and a resource before checking out.");
+      setMessage({ type: "error", text: "Choose a member and a resource before checking out." });
       return;
     }
     if (!form.dueDate || form.dueDate < todayInputValue()) {
-      setMessage("Due date cannot be in the past.");
+      setMessage({ type: "error", text: "Due date cannot be in the past." });
       return;
     }
     try {
       await checkOutResource(form);
-      setMessage("Resource checked out successfully.");
+      setMessage({ type: "success", text: "Resource checked out successfully." });
       setForm({ memberId: "", resourceId: "", dueDate: defaultDueDate() });
       load();
     } catch (error) {
-      setMessage(error.response?.data?.error || "Unable to complete checkout.");
+      setMessage({ type: "error", text: error.response?.data?.error || "Unable to complete checkout." });
     }
   };
 
   const handleCheckIn = async (id) => {
     try {
       await checkInResource(id);
-      setMessage("Resource checked in successfully.");
+      setMessage({ type: "success", text: "Resource checked in successfully." });
       load();
     } catch (error) {
-      setMessage(error.response?.data?.error || "Unable to complete check-in.");
+      setMessage({ type: "error", text: error.response?.data?.error || "Unable to complete check-in." });
     }
   };
 
@@ -82,7 +82,7 @@ function Transactions() {
       title="Check-In / Check-Out"
       description="Record borrowing and returns. Availability updates automatically after each transaction."
     >
-      {message ? <p className="message-banner">{message}</p> : null}
+      {message ? <p className={`message-banner${message.type === "error" ? " error" : ""}`}>{message.text}</p> : null}
 
       <section className="panel-card" style={{ marginTop: 0 }}>
         <h2>Check out a resource</h2>
