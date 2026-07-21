@@ -6,10 +6,18 @@ import { getBooks } from "../services/bookService";
 import { getMembers } from "../services/memberService";
 import { checkInResource, checkOutResource, getTransactions } from "../services/transactionService";
 
+function toInputValue(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function todayInputValue() {
+  return toInputValue(new Date());
+}
+
 function defaultDueDate() {
   const d = new Date();
   d.setDate(d.getDate() + 7);
-  return d.toISOString().slice(0, 10);
+  return toInputValue(d);
 }
 
 function Transactions() {
@@ -42,6 +50,10 @@ function Transactions() {
     event.preventDefault();
     if (!form.memberId || !form.resourceId) {
       setMessage("Choose a member and a resource before checking out.");
+      return;
+    }
+    if (!form.dueDate || form.dueDate < todayInputValue()) {
+      setMessage("Due date cannot be in the past.");
       return;
     }
     try {
@@ -87,7 +99,17 @@ function Transactions() {
               <option key={b.id} value={b.id}>{b.title} ({b.availableCopies} available)</option>
             ))}
           </select>
-          <input className="form-input" type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
+          <div className="form-group">
+            <label className="form-label" htmlFor="dueDate">Due date</label>
+            <input
+              id="dueDate"
+              className="form-input"
+              type="date"
+              min={todayInputValue()}
+              value={form.dueDate}
+              onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
+            />
+          </div>
           <button className="button primary auto" type="submit">Check out</button>
         </form>
       </section>

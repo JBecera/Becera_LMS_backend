@@ -37,6 +37,7 @@ function AppLayout({ eyebrow, title, description, actions, children }) {
             <NavLink
               key={link.to}
               to={link.to}
+              end
               className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}
             >
               <Icon name={link.icon} size={17} />

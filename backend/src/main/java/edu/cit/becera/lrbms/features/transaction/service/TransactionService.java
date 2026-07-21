@@ -60,6 +60,9 @@ public class TransactionService {
         if (request.getDueDate() == null) {
             throw new IllegalArgumentException("Due date is required");
         }
+        if (request.getDueDate().isBefore(AppClock.today())) {
+            throw new IllegalArgumentException("Due date cannot be in the past");
+        }
 
         Member member = memberRepository.findById(request.getMemberId())
                 .orElseThrow(() -> new IllegalArgumentException("Member not found"));

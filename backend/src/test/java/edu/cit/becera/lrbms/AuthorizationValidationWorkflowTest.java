@@ -1,5 +1,7 @@
 package edu.cit.becera.lrbms;
 
+import edu.cit.becera.lrbms.entities.Transaction;
+import edu.cit.becera.lrbms.repositories.TransactionRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,6 +39,9 @@ class AuthorizationValidationWorkflowTest {
 
     @Autowired
     private TestRestTemplate restTemplate;
+
+    @Autowired
+    private TransactionRepository transactionRepository;
 
     @SuppressWarnings("unchecked")
     @Test
@@ -85,12 +90,19 @@ class AuthorizationValidationWorkflowTest {
                 "title", "Working Effectively with Legacy Code", "author", "Michael Feathers",
                 "isbn", "ISBN-WORKFLOW-3", "category", "Programming", "availableCopies", 1));
 
+        // Checkout itself must use a valid (non-past) due date - the API now rejects backdating it
+        // directly - so the loan is backdated afterward, straight in the repository, purely to
+        // simulate an already-overdue loan for this check-in/fine assertion.
         ResponseEntity<Map> checkout = restTemplate.exchange(
                 "/api/transactions/checkout", HttpMethod.POST,
-                new HttpEntity<>(Map.of("memberId", eveId, "resourceId", bookId, "dueDate", LocalDate.now().minusDays(2).toString()), authHeaders(librarianToken)),
+                new HttpEntity<>(Map.of("memberId", eveId, "resourceId", bookId, "dueDate", LocalDate.now().plusDays(7).toString()), authHeaders(librarianToken)),
                 Map.class);
         assertThat(checkout.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         Number transactionId = (Number) checkout.getBody().get("id");
+
+        Transaction transaction = transactionRepository.findById(transactionId.longValue()).orElseThrow();
+        transaction.setDueDate(LocalDate.now().minusDays(2));
+        transactionRepository.save(transaction);
 
         ResponseEntity<Map> checkin = restTemplate.exchange(
                 "/api/transactions/" + transactionId + "/checkin", HttpMethod.POST, new HttpEntity<>(authHeaders(librarianToken)), Map.class);
