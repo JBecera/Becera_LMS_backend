@@ -87,18 +87,24 @@ function Transactions() {
       <section className="panel-card" style={{ marginTop: 0 }}>
         <h2>Check out a resource</h2>
         <form onSubmit={handleCheckout} className="form-grid">
-          <select className="form-input" value={form.memberId} onChange={(e) => setForm({ ...form, memberId: e.target.value })}>
-            <option value="">Select member</option>
-            {members.map((m) => (
-              <option key={m.id} value={m.id}>{m.firstName} {m.lastName} — {m.email}</option>
-            ))}
-          </select>
-          <select className="form-input" value={form.resourceId} onChange={(e) => setForm({ ...form, resourceId: e.target.value })}>
-            <option value="">Select resource</option>
-            {availableBooks.map((b) => (
-              <option key={b.id} value={b.id}>{b.title} ({b.availableCopies} available)</option>
-            ))}
-          </select>
+          <div className="form-group">
+            <label className="form-label" htmlFor="checkoutMember">Member</label>
+            <select id="checkoutMember" className="form-input" value={form.memberId} onChange={(e) => setForm({ ...form, memberId: e.target.value })}>
+              <option value="">Select member</option>
+              {members.map((m) => (
+                <option key={m.id} value={m.id}>{m.firstName} {m.lastName} — {m.email}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label" htmlFor="checkoutResource">Resource</label>
+            <select id="checkoutResource" className="form-input" value={form.resourceId} onChange={(e) => setForm({ ...form, resourceId: e.target.value })}>
+              <option value="">Select resource</option>
+              {availableBooks.map((b) => (
+                <option key={b.id} value={b.id}>{b.title} ({b.availableCopies} available)</option>
+              ))}
+            </select>
+          </div>
           <div className="form-group">
             <label className="form-label" htmlFor="dueDate">Due date</label>
             <input
@@ -110,7 +116,9 @@ function Transactions() {
               onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
             />
           </div>
-          <button className="button primary auto" type="submit">Check out</button>
+          <div className="form-group form-group-actions">
+            <button className="button primary auto" type="submit">Check out</button>
+          </div>
         </form>
       </section>
 
