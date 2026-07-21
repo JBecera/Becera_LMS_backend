@@ -7,6 +7,7 @@ public class BookRequest {
     private String category;
     private String description;
     private String coverImage;
+    private Integer totalCopies;
     private Integer availableCopies;
 
     public String getTitle() { return title; }
@@ -21,6 +22,8 @@ public class BookRequest {
     public void setDescription(String description) { this.description = description; }
     public String getCoverImage() { return coverImage; }
     public void setCoverImage(String coverImage) { this.coverImage = coverImage; }
+    public Integer getTotalCopies() { return totalCopies; }
+    public void setTotalCopies(Integer totalCopies) { this.totalCopies = totalCopies; }
     public Integer getAvailableCopies() { return availableCopies; }
     public void setAvailableCopies(Integer availableCopies) { this.availableCopies = availableCopies; }
 }

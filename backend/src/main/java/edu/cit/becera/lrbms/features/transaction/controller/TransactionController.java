@@ -1,6 +1,7 @@
 package edu.cit.becera.lrbms.features.transaction.controller;
 
 import edu.cit.becera.lrbms.features.transaction.dto.CheckoutRequest;
+import edu.cit.becera.lrbms.features.transaction.dto.SelfCheckoutRequest;
 import edu.cit.becera.lrbms.features.transaction.dto.TransactionResponse;
 import edu.cit.becera.lrbms.features.transaction.service.TransactionService;
 import edu.cit.becera.lrbms.security.CurrentUser;
@@ -40,6 +41,21 @@ public class TransactionController {
     public ResponseEntity<?> checkout(@RequestBody CheckoutRequest request) {
         try {
             return ResponseEntity.status(HttpStatus.CREATED).body(transactionService.checkout(request));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+        }
+    }
+
+    @PostMapping("/self-checkout")
+    public ResponseEntity<?> selfCheckout(@RequestBody SelfCheckoutRequest request) {
+        CurrentUser currentUser = SecurityUtils.currentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Login required"));
+        }
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED).body(transactionService.selfCheckout(currentUser, request));
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
         } catch (IllegalStateException ex) {

@@ -13,7 +13,7 @@ export const navByRole = {
     { to: "/librarian/catalog", label: "Catalog", icon: "catalog" },
     { to: "/librarian/transactions", label: "Transactions", icon: "transactions" },
     { to: "/librarian/reservations", label: "Reservations", icon: "reserve" },
-    { to: "/librarian/students", label: "Students", icon: "students" },
+    { to: "/librarian/members", label: "Members", icon: "students" },
     { to: "/librarian/fines", label: "Fines", icon: "fines" },
     { to: "/account", label: "My Account", icon: "accounts" },
   ],

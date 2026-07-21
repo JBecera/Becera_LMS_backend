@@ -13,8 +13,8 @@ public class Member {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "student_id", unique = true)
-    private String studentId;
+    @Column(name = "member_id", unique = true)
+    private String memberId;
 
     @Column(name = "first_name")
     private String firstName;
@@ -59,12 +59,12 @@ public class Member {
         this.id = id;
     }
 
-    public String getStudentId() {
-        return studentId;
+    public String getMemberId() {
+        return memberId;
     }
 
-    public void setStudentId(String studentId) {
-        this.studentId = studentId;
+    public void setMemberId(String memberId) {
+        this.memberId = memberId;
     }
 
     public String getFirstName() {

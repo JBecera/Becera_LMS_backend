@@ -29,6 +29,13 @@ public class CatalogController {
         return catalogService.searchBooks(query);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getBook(@PathVariable Long id) {
+        return catalogService.getBook(id)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @PostMapping
     public ResponseEntity<?> createBook(@RequestBody BookRequest request) {
         try {

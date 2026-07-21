@@ -73,6 +73,7 @@ function Reservations() {
                   {isLibrarian ? <th>Member</th> : null}
                   <th>Reserved on</th>
                   <th>Status</th>
+                  <th>Position</th>
                   <th></th>
                 </tr>
               </thead>
@@ -85,6 +86,7 @@ function Reservations() {
                     <td>
                       <Badge status={r.status?.toLowerCase()} />
                     </td>
+                    <td className="mono">{r.queuePosition ? `#${r.queuePosition}` : "—"}</td>
                     <td>
                       {isLibrarian && r.status === "PENDING" ? (
                         <>

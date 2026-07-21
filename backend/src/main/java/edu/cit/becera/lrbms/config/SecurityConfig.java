@@ -61,7 +61,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/members").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/books", "/api/books/search").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/books", "/api/books/search", "/api/books/*").permitAll()
 
                 // Members (staff-managed)
                 .requestMatchers(HttpMethod.GET, "/api/members", "/api/members/role/**").hasAnyRole("ADMIN", "LIBRARIAN")
@@ -77,6 +77,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/transactions").hasAnyRole("ADMIN", "LIBRARIAN")
                 .requestMatchers(HttpMethod.GET, "/api/transactions/member/**").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/transactions/checkout").hasAnyRole("ADMIN", "LIBRARIAN")
+                .requestMatchers(HttpMethod.POST, "/api/transactions/self-checkout").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/transactions/*/checkin").hasAnyRole("ADMIN", "LIBRARIAN")
 
                 // Reservations

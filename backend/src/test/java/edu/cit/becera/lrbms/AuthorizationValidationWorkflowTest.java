@@ -100,10 +100,17 @@ class AuthorizationValidationWorkflowTest {
                 "/api/fines/member/" + eveId, HttpMethod.GET, new HttpEntity<>(authHeaders(eveToken)), List.class);
         assertThat(fines.getBody()).hasSize(1);
 
-        // Book is out of stock again for this reservation attempt (this member checked out the only copy).
+        // Book must legitimately reach 0 stock (task 2: new books always start fully available) -
+        // a neutral third member checks out the only copy so it's genuinely out of stock for eve.
         Number secondBookId = createBook(librarianToken, Map.of(
                 "title", "Domain-Driven Design", "author", "Eric Evans",
-                "isbn", "ISBN-WORKFLOW-3B", "category", "Programming", "availableCopies", 0));
+                "isbn", "ISBN-WORKFLOW-3B", "category", "Programming", "totalCopies", 1, "availableCopies", 1));
+        Number neutralBorrowerId = registerMember("greta.borrower@example.com");
+        ResponseEntity<Map> neutralCheckout = restTemplate.exchange(
+                "/api/transactions/checkout", HttpMethod.POST,
+                new HttpEntity<>(Map.of("memberId", neutralBorrowerId, "resourceId", secondBookId, "dueDate", LocalDate.now().plusDays(7).toString()), authHeaders(librarianToken)),
+                Map.class);
+        assertThat(neutralCheckout.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
         ResponseEntity<Map> blockedReservation = restTemplate.exchange(
                 "/api/reservations", HttpMethod.POST,

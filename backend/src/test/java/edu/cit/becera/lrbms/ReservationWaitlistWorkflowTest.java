@@ -11,14 +11,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 
+import java.time.LocalDate;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * End-to-end workflow #2: FR-008 reservations, including the SRS business rule that a title may
- * only be reserved once every copy is checked out, and the duplicate-reservation-prevention
- * validation scenario.
+ * only be reserved once every copy is checked out - an in-stock title is borrowed directly
+ * instead - plus queue position tracking and duplicate-reservation prevention.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {
@@ -36,25 +37,35 @@ class ReservationWaitlistWorkflowTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    void memberJoinsWaitlistAndDuplicateReservationIsRejected() {
+    void memberJoinsWaitlistWithQueuePositionAndDuplicateReservationIsRejected() {
         String librarianToken = loginAndGetToken("librarian@library.test", "librarian123");
 
-        // A fully-checked-out title (0 copies) - the only case a reservation is allowed for.
-        Map<String, Object> outOfStockBook = Map.of(
+        // A title that starts fully available (task 2: new books can never be pre-checked-out),
+        // then gets checked out to another member so it legitimately reaches 0 copies.
+        Map<String, Object> soonToBeOutOfStockBook = Map.of(
                 "title", "The Pragmatic Programmer",
                 "author", "Hunt & Thomas",
                 "isbn", "ISBN-WORKFLOW-2A",
                 "category", "Programming",
-                "availableCopies", 0
+                "totalCopies", 1,
+                "availableCopies", 1
         );
-        Number outOfStockBookId = createBook(librarianToken, outOfStockBook);
+        Number outOfStockBookId = createBook(librarianToken, soonToBeOutOfStockBook);
 
-        // An available title (1 copy) - reservation must be rejected for this one.
+        Number borrowerId = registerMember("owen.borrower@example.com");
+        ResponseEntity<Map> checkout = restTemplate.exchange(
+                "/api/transactions/checkout", HttpMethod.POST,
+                new HttpEntity<>(Map.of("memberId", borrowerId, "resourceId", outOfStockBookId, "dueDate", LocalDate.now().plusDays(7).toString()), authHeaders(librarianToken)),
+                Map.class);
+        assertThat(checkout.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+        // An available title (1 copy) - reservation must be rejected in favor of borrowing directly.
         Map<String, Object> availableBook = Map.of(
                 "title", "Refactoring",
                 "author", "Martin Fowler",
                 "isbn", "ISBN-WORKFLOW-2B",
                 "category", "Programming",
+                "totalCopies", 1,
                 "availableCopies", 1
         );
         Number availableBookId = createBook(librarianToken, availableBook);
@@ -62,12 +73,13 @@ class ReservationWaitlistWorkflowTest {
         Number memberId = registerMember("priya.member@example.com");
         String memberToken = loginAndGetToken("priya.member@example.com", "pass1234");
 
-        // Reserve the out-of-stock title - should succeed and land on the PENDING queue.
+        // Reserve the out-of-stock title - should succeed, land on the PENDING queue, and be #1 in line.
         ResponseEntity<Map> firstReservation = restTemplate.exchange(
                 "/api/reservations", HttpMethod.POST,
                 new HttpEntity<>(Map.of("resourceId", outOfStockBookId), authHeaders(memberToken)), Map.class);
         assertThat(firstReservation.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(firstReservation.getBody().get("status")).isEqualTo("PENDING");
+        assertThat(((Number) firstReservation.getBody().get("queuePosition")).intValue()).isEqualTo(1);
         Number reservationId = (Number) firstReservation.getBody().get("id");
 
         // Validation scenario: duplicate reservation of the same title by the same member is rejected.
@@ -77,28 +89,30 @@ class ReservationWaitlistWorkflowTest {
         assertThat(duplicateReservation.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat((String) duplicateReservation.getBody().get("error")).containsIgnoringCase("already reserved");
 
-        // Business rule: a title with copies available cannot be reserved (would-be instant grab).
+        // Business rule: a title with copies available cannot be reserved - it's borrowed directly instead.
         ResponseEntity<Map> availableReservation = restTemplate.exchange(
                 "/api/reservations", HttpMethod.POST,
                 new HttpEntity<>(Map.of("resourceId", availableBookId), authHeaders(memberToken)), Map.class);
         assertThat(availableReservation.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
 
-        // Librarian approves the legitimate reservation.
-        ResponseEntity<Map> approval = restTemplate.exchange(
-                "/api/reservations/" + reservationId, HttpMethod.PUT,
-                new HttpEntity<>(Map.of("status", "APPROVED"), authHeaders(librarianToken)), Map.class);
-        assertThat(approval.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(approval.getBody().get("status")).isEqualTo("APPROVED");
-
-        // A second member's reservation on the same title is rejected by the librarian.
+        // A second member joins the same waitlist and lands at position #2.
         Number secondMemberId = registerMember("noah.member@example.com");
         String secondMemberToken = loginAndGetToken("noah.member@example.com", "pass1234");
         ResponseEntity<Map> secondReservation = restTemplate.exchange(
                 "/api/reservations", HttpMethod.POST,
                 new HttpEntity<>(Map.of("resourceId", outOfStockBookId), authHeaders(secondMemberToken)), Map.class);
         assertThat(secondReservation.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(((Number) secondReservation.getBody().get("queuePosition")).intValue()).isEqualTo(2);
         Number secondReservationId = (Number) secondReservation.getBody().get("id");
 
+        // Librarian approves the first-in-line reservation.
+        ResponseEntity<Map> approval = restTemplate.exchange(
+                "/api/reservations/" + reservationId, HttpMethod.PUT,
+                new HttpEntity<>(Map.of("status", "APPROVED"), authHeaders(librarianToken)), Map.class);
+        assertThat(approval.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(approval.getBody().get("status")).isEqualTo("APPROVED");
+
+        // The second member's reservation is rejected by the librarian.
         ResponseEntity<Map> rejection = restTemplate.exchange(
                 "/api/reservations/" + secondReservationId, HttpMethod.PUT,
                 new HttpEntity<>(Map.of("status", "REJECTED"), authHeaders(librarianToken)), Map.class);

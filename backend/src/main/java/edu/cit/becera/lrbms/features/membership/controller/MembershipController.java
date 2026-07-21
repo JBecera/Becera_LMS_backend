@@ -1,6 +1,7 @@
 package edu.cit.becera.lrbms.features.membership.controller;
 
 import edu.cit.becera.lrbms.entities.Member;
+import edu.cit.becera.lrbms.features.membership.dto.ChangePasswordRequest;
 import edu.cit.becera.lrbms.features.membership.dto.CreateMemberRequest;
 import edu.cit.becera.lrbms.features.membership.service.MembershipService;
 import edu.cit.becera.lrbms.security.CurrentUser;
@@ -60,6 +61,19 @@ public class MembershipController {
         try {
             CurrentUser currentUser = SecurityUtils.currentUser();
             return ResponseEntity.ok(membershipService.updateMember(id, request, currentUser));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
+        } catch (AccessDeniedException ex) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", ex.getMessage()));
+        }
+    }
+
+    @PutMapping("/{id}/password")
+    public ResponseEntity<?> changePassword(@PathVariable Long id, @RequestBody ChangePasswordRequest request) {
+        try {
+            CurrentUser currentUser = SecurityUtils.currentUser();
+            Member updated = membershipService.changePassword(id, request, currentUser);
+            return ResponseEntity.ok(updated);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
         } catch (AccessDeniedException ex) {

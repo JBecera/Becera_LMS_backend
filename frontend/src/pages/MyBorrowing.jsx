@@ -34,7 +34,7 @@ function MyBorrowing() {
 
       <section className="panel-card" style={{ marginTop: 0 }}>
         {activeLoans.length === 0 ? (
-          <EmptyState icon="borrow" title="Nothing borrowed yet" description="Reserved titles move here once a librarian checks them out to you." />
+          <EmptyState icon="borrow" title="Nothing borrowed yet" description="Titles you borrow from the catalog will show up here." />
         ) : (
           <div className="table-wrap">
             <table className="data-table">

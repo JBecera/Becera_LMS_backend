@@ -24,7 +24,8 @@ public class RoleDatabaseInitializer implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         jdbcTemplate.execute("ALTER TABLE members ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'MEMBER'");
-        jdbcTemplate.execute("ALTER TABLE members ADD COLUMN IF NOT EXISTS student_id VARCHAR(20)");
+        jdbcTemplate.execute("ALTER TABLE members ADD COLUMN IF NOT EXISTS member_id VARCHAR(20)");
+        migrateStudentIdToMemberId();
         jdbcTemplate.execute("ALTER TABLE members ADD COLUMN IF NOT EXISTS phone_number VARCHAR(30)");
         jdbcTemplate.execute("ALTER TABLE members ADD COLUMN IF NOT EXISTS address VARCHAR(255)");
         jdbcTemplate.execute("ALTER TABLE members ADD COLUMN IF NOT EXISTS date_registered DATE");
@@ -33,6 +34,23 @@ public class RoleDatabaseInitializer implements ApplicationRunner {
 
         ensureAccount("admin@library.test", "Admin", "User", "admin123", "ADMIN");
         ensureAccount("librarian@library.test", "Library", "Staff", "librarian123", "LIBRARIAN");
+    }
+
+    /**
+     * Older deployments have a "student_id" column (this system used to be student-only). New
+     * installs never create it, so guard on its existence before touching it — referencing a
+     * column that was never created would fail the migration outright.
+     */
+    private void migrateStudentIdToMemberId() {
+        Integer columnCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.columns WHERE LOWER(table_name) = 'members' AND LOWER(column_name) = 'student_id'",
+                Integer.class);
+        if (columnCount == null || columnCount == 0) {
+            return;
+        }
+        jdbcTemplate.execute("UPDATE members SET member_id = student_id WHERE member_id IS NULL AND student_id IS NOT NULL");
+        jdbcTemplate.execute("UPDATE members SET member_id = REPLACE(member_id, 'STU-', 'MEM-') WHERE member_id LIKE 'STU-%'");
+        jdbcTemplate.execute("ALTER TABLE members DROP COLUMN student_id");
     }
 
     @Transactional

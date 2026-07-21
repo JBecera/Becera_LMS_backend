@@ -19,7 +19,7 @@ function AdminDashboard() {
       .catch(() => setMessage("Unable to load management data."));
   }, []);
 
-  const students = members.filter((m) => m.role?.toUpperCase() === "MEMBER");
+  const memberAccounts = members.filter((m) => m.role?.toUpperCase() === "MEMBER");
   const recentAccounts = [...members].slice(-5).reverse();
 
   return (
@@ -31,7 +31,7 @@ function AdminDashboard() {
       {message ? <p className="message-banner error">{message}</p> : null}
 
       <section className="dashboard-grid">
-        <StatCard label="Registered students" value={students.length} hint="Members with borrowing access" />
+        <StatCard label="Registered members" value={memberAccounts.length} hint="Members with borrowing access" />
         <StatCard label="Librarian accounts" value={librarians.length} hint="Staff with administrative access" />
         <StatCard label="Total accounts" value={members.length + 1} hint="Including this admin account" />
       </section>

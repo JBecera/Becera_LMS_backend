@@ -12,8 +12,13 @@ public class ReservationResponse {
     private String resourceTitle;
     private LocalDate reservationDate;
     private String status;
+    private Integer queuePosition;
 
     public static ReservationResponse from(Reservation reservation) {
+        return from(reservation, null);
+    }
+
+    public static ReservationResponse from(Reservation reservation, Integer queuePosition) {
         ReservationResponse response = new ReservationResponse();
         response.id = reservation.getId();
         response.memberId = reservation.getMember().getId();
@@ -22,6 +27,7 @@ public class ReservationResponse {
         response.resourceTitle = reservation.getBook().getTitle();
         response.reservationDate = reservation.getReservationDate();
         response.status = reservation.getStatus();
+        response.queuePosition = queuePosition;
         return response;
     }
 
@@ -32,4 +38,5 @@ public class ReservationResponse {
     public String getResourceTitle() { return resourceTitle; }
     public LocalDate getReservationDate() { return reservationDate; }
     public String getStatus() { return status; }
+    public Integer getQueuePosition() { return queuePosition; }
 }

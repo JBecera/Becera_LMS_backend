@@ -9,7 +9,7 @@ data class Member(
     @SerializedName("email") val email: String,
     @SerializedName("password") val password: String? = null,
     @SerializedName("role") val role: String? = null,
-    @SerializedName("studentId") val studentId: String? = null,
+    @SerializedName("memberId") val memberId: String? = null,
     @SerializedName("phoneNumber") val phoneNumber: String? = null,
     @SerializedName("address") val address: String? = null,
     @SerializedName("dateRegistered") val dateRegistered: String? = null

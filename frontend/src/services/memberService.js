@@ -13,6 +13,10 @@ export const addMember = (member) => api.post("/members", member);
 export const updateMember = (id, member) =>
   api.put(`/members/${id}`, member);
 
+// CHANGE PASSWORD (requires current password verification for self-service changes)
+export const changePassword = (id, payload) =>
+  api.put(`/members/${id}/password`, payload);
+
 // DELETE
 export const deleteMember = (id) =>
   api.delete(`/members/${id}`);

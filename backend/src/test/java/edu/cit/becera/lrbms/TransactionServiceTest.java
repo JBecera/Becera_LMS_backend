@@ -5,6 +5,7 @@ import edu.cit.becera.lrbms.entities.Fine;
 import edu.cit.becera.lrbms.entities.Member;
 import edu.cit.becera.lrbms.entities.Transaction;
 import edu.cit.becera.lrbms.features.transaction.dto.CheckoutRequest;
+import edu.cit.becera.lrbms.features.transaction.dto.SelfCheckoutRequest;
 import edu.cit.becera.lrbms.features.transaction.dto.TransactionResponse;
 import edu.cit.becera.lrbms.features.transaction.service.TransactionService;
 import edu.cit.becera.lrbms.repositories.BookRepository;
@@ -12,6 +13,7 @@ import edu.cit.becera.lrbms.repositories.FineRepository;
 import edu.cit.becera.lrbms.repositories.MemberRepository;
 import edu.cit.becera.lrbms.repositories.ReservationRepository;
 import edu.cit.becera.lrbms.repositories.TransactionRepository;
+import edu.cit.becera.lrbms.security.CurrentUser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,6 +78,15 @@ class TransactionServiceTest {
         return request;
     }
 
+    private SelfCheckoutRequest selfRequest(LocalDate dueDate) {
+        SelfCheckoutRequest request = new SelfCheckoutRequest();
+        request.setResourceId(2L);
+        request.setDueDate(dueDate);
+        return request;
+    }
+
+    private final CurrentUser requester = new CurrentUser(1L, "MEMBER");
+
     @Test
     void checkoutShouldDecrementAvailabilityAndCreateActiveLoan() {
         when(transactionRepository.findByMemberAndStatus(member, "ACTIVE")).thenReturn(List.of());
@@ -112,6 +123,55 @@ class TransactionServiceTest {
         when(transactionRepository.findByMemberAndStatus(member, "ACTIVE")).thenReturn(List.of());
 
         assertThrows(IllegalStateException.class, () -> transactionService.checkout(request(LocalDate.now().plusDays(7))));
+    }
+
+    @Test
+    void checkoutShouldRejectWhenMemberAlreadyHasActiveLoanForSameBook() {
+        Transaction existingLoan = new Transaction();
+        existingLoan.setBook(book);
+        existingLoan.setDueDate(LocalDate.now().plusDays(3));
+        when(transactionRepository.findByMemberAndStatus(member, "ACTIVE")).thenReturn(List.of(existingLoan));
+
+        assertThrows(IllegalStateException.class, () -> transactionService.checkout(request(LocalDate.now().plusDays(7))));
+    }
+
+    @Test
+    void selfCheckoutShouldDecrementAvailabilityAndCreateActiveLoan() {
+        when(transactionRepository.findByMemberAndStatus(member, "ACTIVE")).thenReturn(List.of());
+
+        TransactionResponse response = transactionService.selfCheckout(requester, selfRequest(LocalDate.now().plusDays(7)));
+
+        assertEquals("ACTIVE", response.getStatus());
+        assertEquals(0, book.getAvailableCopies());
+    }
+
+    @Test
+    void selfCheckoutShouldRejectWhenNoCopiesAvailable() {
+        book.setAvailableCopies(0);
+        when(transactionRepository.findByMemberAndStatus(member, "ACTIVE")).thenReturn(List.of());
+
+        assertThrows(IllegalStateException.class, () -> transactionService.selfCheckout(requester, selfRequest(LocalDate.now().plusDays(7))));
+    }
+
+    @Test
+    void selfCheckoutShouldRejectWhenMemberAlreadyHasActiveLoanForSameBook() {
+        Transaction existingLoan = new Transaction();
+        existingLoan.setBook(book);
+        existingLoan.setDueDate(LocalDate.now().plusDays(3));
+        when(transactionRepository.findByMemberAndStatus(member, "ACTIVE")).thenReturn(List.of(existingLoan));
+
+        assertThrows(IllegalStateException.class, () -> transactionService.selfCheckout(requester, selfRequest(LocalDate.now().plusDays(7))));
+    }
+
+    @Test
+    void selfCheckoutShouldRejectReturnDateNotAfterBorrowDate() {
+        assertThrows(IllegalArgumentException.class, () -> transactionService.selfCheckout(requester, selfRequest(LocalDate.now())));
+    }
+
+    @Test
+    void selfCheckoutShouldRejectReturnDateBeyondMaxLoanDuration() {
+        assertThrows(IllegalArgumentException.class,
+                () -> transactionService.selfCheckout(requester, selfRequest(LocalDate.now().plusDays(TransactionService.MAX_LOAN_DAYS + 1))));
     }
 
     @Test

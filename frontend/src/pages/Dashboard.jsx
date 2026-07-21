@@ -68,7 +68,7 @@ function Dashboard() {
         <p className="panel-sub">Due dates count down from today — return before they turn red.</p>
 
         {activeLoans.length === 0 ? (
-          <EmptyState icon="borrow" title="No active loans" description="Reserve a title from the catalog to get started." />
+          <EmptyState icon="borrow" title="No active loans" description="Borrow a title from the catalog to get started." />
         ) : (
           <div className="table-wrap">
             <table className="data-table">

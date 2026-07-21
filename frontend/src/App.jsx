@@ -6,6 +6,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 import Dashboard from "./pages/Dashboard";
 import Catalog from "./pages/Catalog";
+import BorrowConfirmation from "./pages/BorrowConfirmation";
+import ReservationConfirmation from "./pages/ReservationConfirmation";
 import MyBorrowing from "./pages/MyBorrowing";
 import Reservations from "./pages/Reservations";
 import BorrowingHistory from "./pages/BorrowingHistory";
@@ -15,7 +17,7 @@ import Account from "./pages/Account";
 import LibrarianDashboard from "./pages/LibrarianDashboard";
 import ManageCatalog from "./pages/ManageCatalog";
 import Transactions from "./pages/Transactions";
-import Students from "./pages/Students";
+import Members from "./pages/Members";
 
 import AdminDashboard from "./pages/AdminDashboard";
 import ManageAccounts from "./pages/ManageAccounts";
@@ -30,6 +32,8 @@ function App() {
         {/* Member */}
         <Route path="/dashboard" element={<ProtectedRoute allowedRoles={["MEMBER"]}><Dashboard /></ProtectedRoute>} />
         <Route path="/catalog" element={<ProtectedRoute allowedRoles={["MEMBER"]}><Catalog /></ProtectedRoute>} />
+        <Route path="/catalog/:bookId/borrow" element={<ProtectedRoute allowedRoles={["MEMBER"]}><BorrowConfirmation /></ProtectedRoute>} />
+        <Route path="/catalog/:bookId/reserve" element={<ProtectedRoute allowedRoles={["MEMBER"]}><ReservationConfirmation /></ProtectedRoute>} />
         <Route path="/my-borrowing" element={<ProtectedRoute allowedRoles={["MEMBER"]}><MyBorrowing /></ProtectedRoute>} />
         <Route path="/reservations" element={<ProtectedRoute allowedRoles={["MEMBER"]}><Reservations /></ProtectedRoute>} />
         <Route path="/history" element={<ProtectedRoute allowedRoles={["MEMBER"]}><BorrowingHistory /></ProtectedRoute>} />
@@ -40,7 +44,7 @@ function App() {
         <Route path="/librarian/catalog" element={<ProtectedRoute allowedRoles={["LIBRARIAN"]}><ManageCatalog /></ProtectedRoute>} />
         <Route path="/librarian/transactions" element={<ProtectedRoute allowedRoles={["LIBRARIAN"]}><Transactions /></ProtectedRoute>} />
         <Route path="/librarian/reservations" element={<ProtectedRoute allowedRoles={["LIBRARIAN"]}><Reservations /></ProtectedRoute>} />
-        <Route path="/librarian/students" element={<ProtectedRoute allowedRoles={["LIBRARIAN"]}><Students /></ProtectedRoute>} />
+        <Route path="/librarian/members" element={<ProtectedRoute allowedRoles={["LIBRARIAN"]}><Members /></ProtectedRoute>} />
         <Route path="/librarian/fines" element={<ProtectedRoute allowedRoles={["LIBRARIAN"]}><Fines /></ProtectedRoute>} />
 
         {/* Admin */}

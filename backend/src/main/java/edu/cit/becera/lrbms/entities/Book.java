@@ -27,6 +27,10 @@ public class Book {
 
     private String coverImage;
 
+    /** Total copies the library owns. New books always start with availableCopies == totalCopies. */
+    @Column(name = "total_copies")
+    private Integer totalCopies = 1;
+
     @Column(nullable = false)
     private Integer availableCopies = 1;
 
@@ -92,5 +96,13 @@ public class Book {
 
     public void setAvailableCopies(Integer availableCopies) {
         this.availableCopies = availableCopies;
+    }
+
+    public Integer getTotalCopies() {
+        return totalCopies;
+    }
+
+    public void setTotalCopies(Integer totalCopies) {
+        this.totalCopies = totalCopies;
     }
 }

@@ -4,7 +4,7 @@ import Badge from "../components/ui/Badge";
 import EmptyState from "../components/ui/EmptyState";
 import { createBook, deleteBook, getBooks, updateBook } from "../services/bookService";
 
-const emptyForm = { id: null, title: "", author: "", isbn: "", category: "", description: "", coverImage: "", availableCopies: 1 };
+const emptyForm = { id: null, title: "", author: "", isbn: "", category: "", description: "", coverImage: "", totalCopies: 1, availableCopies: 1 };
 
 function ManageCatalog() {
   const [books, setBooks] = useState([]);
@@ -24,9 +24,11 @@ function ManageCatalog() {
     loadData();
   }, []);
 
+  const numericFields = ["totalCopies", "availableCopies"];
+
   const handleBookChange = (event) => {
     const { name, value } = event.target;
-    setBookForm((current) => ({ ...current, [name]: name === "availableCopies" ? Number(value) : value }));
+    setBookForm((current) => ({ ...current, [name]: numericFields.includes(name) ? Number(value) : value }));
   };
 
   const handleBookSubmit = async (event) => {
@@ -47,7 +49,11 @@ function ManageCatalog() {
   };
 
   const handleEdit = (book) => {
-    setBookForm({ ...book, availableCopies: book.availableCopies ?? 1 });
+    setBookForm({
+      ...book,
+      totalCopies: book.totalCopies ?? book.availableCopies ?? 1,
+      availableCopies: book.availableCopies ?? 1,
+    });
   };
 
   const handleDelete = async (id) => {
@@ -78,8 +84,16 @@ function ManageCatalog() {
           <input className="form-input" name="isbn" placeholder="ISBN" value={bookForm.isbn} onChange={handleBookChange} required />
           <input className="form-input" name="category" placeholder="Category" value={bookForm.category} onChange={handleBookChange} required />
           <input className="form-input" name="coverImage" placeholder="Cover image URL" value={bookForm.coverImage} onChange={handleBookChange} />
-          <input className="form-input" name="availableCopies" type="number" min="0" placeholder="Available copies" value={bookForm.availableCopies} onChange={handleBookChange} required />
+          <input className="form-input" name="totalCopies" type="number" min="0" placeholder="Total copies" value={bookForm.totalCopies} onChange={handleBookChange} required />
+          {bookForm.id ? (
+            <input className="form-input" name="availableCopies" type="number" min="0" max={bookForm.totalCopies} placeholder="Available copies" value={bookForm.availableCopies} onChange={handleBookChange} required />
+          ) : null}
           <textarea className="form-input" name="description" placeholder="Description" value={bookForm.description} onChange={handleBookChange} rows="3" style={{ gridColumn: "1 / -1" }} />
+          {!bookForm.id ? (
+            <p className="field-hint" style={{ gridColumn: "1 / -1", margin: 0 }}>
+              A new title starts fully available with all {bookForm.totalCopies || 0} cop{bookForm.totalCopies === 1 ? "y" : "ies"} on the shelf.
+            </p>
+          ) : null}
           <button className="button primary auto" type="submit" style={{ gridColumn: "1 / -1", justifySelf: "start" }}>
             {bookForm.id ? "Save book" : "Create book"}
           </button>
@@ -99,7 +113,8 @@ function ManageCatalog() {
                   <th>Author</th>
                   <th>ISBN</th>
                   <th>Category</th>
-                  <th>Copies</th>
+                  <th>Total</th>
+                  <th>Available</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -111,6 +126,7 @@ function ManageCatalog() {
                     <td>{book.author}</td>
                     <td className="mono">{book.isbn}</td>
                     <td>{book.category}</td>
+                    <td className="mono">{book.totalCopies ?? book.availableCopies}</td>
                     <td className="mono">{book.availableCopies}</td>
                     <td><Badge status={book.availableCopies > 0 ? "available" : "unavailable"}>{book.availableCopies > 0 ? "Available" : "Out of stock"}</Badge></td>
                     <td>

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import AppLayout from "../components/layout/AppLayout";
 import Badge from "../components/ui/Badge";
 import EmptyState from "../components/ui/EmptyState";
 import { getBooks } from "../services/bookService";
-import { createReservation } from "../services/reservationService";
 
 function Catalog() {
+  const navigate = useNavigate();
   const [books, setBooks] = useState([]);
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("");
@@ -29,21 +30,16 @@ function Catalog() {
     return books.filter((book) => `${book.title} ${book.author}`.toLowerCase().includes(query));
   }, [books, search]);
 
-  const handleReserve = async (bookId) => {
-    try {
-      await createReservation(bookId);
-      setMessage("You're on the waitlist. A librarian will approve your reservation once a copy is free.");
-      loadBooks(search);
-    } catch (error) {
-      setMessage(error.response?.data?.error || "Unable to reserve this title right now.");
-    }
+  const handleAction = (book) => {
+    const step = book.availableCopies > 0 ? "borrow" : "reserve";
+    navigate(`/catalog/${book.id}/${step}`, { state: { book } });
   };
 
   return (
     <AppLayout
       eyebrow="Catalog"
       title="Search the catalog"
-      description="Browse by title or author, check real-time availability, and join the waitlist when every copy is checked out."
+      description="Browse by title or author, check real-time availability, and borrow or reserve resources entirely online."
     >
       {message ? <p className="message-banner">{message}</p> : null}
 
@@ -78,13 +74,9 @@ function Catalog() {
                 <Badge status={book.availableCopies > 0 ? "available" : "unavailable"}>
                   {book.availableCopies > 0 ? `${book.availableCopies} available` : "Out of stock"}
                 </Badge>
-                {book.availableCopies > 0 ? (
-                  <span className="catalog-meta">Ask a librarian to check this out for you.</span>
-                ) : (
-                  <button className="button primary auto" onClick={() => handleReserve(book.id)}>
-                    Join waitlist
-                  </button>
-                )}
+                <button className="button primary auto" onClick={() => handleAction(book)}>
+                  {book.availableCopies > 0 ? "Borrow Now" : "Reserve Now"}
+                </button>
               </div>
             </article>
           ))}

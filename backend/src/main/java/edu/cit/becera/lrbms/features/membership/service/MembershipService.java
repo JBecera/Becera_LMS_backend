@@ -1,6 +1,7 @@
 package edu.cit.becera.lrbms.features.membership.service;
 
 import edu.cit.becera.lrbms.entities.Member;
+import edu.cit.becera.lrbms.features.membership.dto.ChangePasswordRequest;
 import edu.cit.becera.lrbms.features.membership.dto.CreateMemberRequest;
 import edu.cit.becera.lrbms.repositories.MemberRepository;
 import edu.cit.becera.lrbms.security.CurrentUser;
@@ -76,8 +77,8 @@ public class MembershipService {
             throw new IllegalArgumentException("A user with this email already exists", ex);
         }
 
-        if ("MEMBER".equals(saved.getRole()) && saved.getStudentId() == null) {
-            saved.setStudentId(String.format("STU-%06d", saved.getId()));
+        if ("MEMBER".equals(saved.getRole()) && saved.getMemberId() == null) {
+            saved.setMemberId(String.format("MEM-%06d", saved.getId()));
             saved = memberRepository.save(saved);
         }
 
@@ -106,9 +107,6 @@ public class MembershipService {
         if (request.getEmail() != null && !request.getEmail().isBlank()) {
             member.setEmail(request.getEmail().trim().toLowerCase());
         }
-        if (request.getPassword() != null && !request.getPassword().isBlank()) {
-            member.setPassword(hashPassword(request.getPassword()));
-        }
         if (request.getPhoneNumber() != null) {
             member.setPhoneNumber(request.getPhoneNumber());
         }
@@ -124,6 +122,42 @@ public class MembershipService {
         } catch (DataIntegrityViolationException ex) {
             throw new IllegalArgumentException("A user with this email already exists", ex);
         }
+    }
+
+    /**
+     * Self-service changes must prove knowledge of the current password; a staff member resetting
+     * someone else's password is trusted on their role instead (no current password on file to check).
+     */
+    public Member changePassword(Long id, ChangePasswordRequest request, CurrentUser requester) {
+        Member member = memberRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Member not found"));
+
+        boolean isSelf = requester != null && requester.owns(id);
+        boolean isStaff = requester != null && requester.isStaff();
+        if (!isSelf && !isStaff) {
+            throw new AccessDeniedException("Not allowed to change this password");
+        }
+
+        if (request == null || request.getNewPassword() == null || request.getNewPassword().isBlank()) {
+            throw new IllegalArgumentException("New password is required");
+        }
+        if (request.getNewPassword().length() < 8) {
+            throw new IllegalArgumentException("New password must be at least 8 characters long");
+        }
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new IllegalArgumentException("New password and confirmation do not match");
+        }
+
+        if (isSelf) {
+            if (request.getCurrentPassword() == null || request.getCurrentPassword().isBlank()) {
+                throw new IllegalArgumentException("Current password is required");
+            }
+            if (!passwordEncoder.matches(request.getCurrentPassword(), member.getPassword())) {
+                throw new IllegalArgumentException("Current password is incorrect");
+            }
+        }
+
+        member.setPassword(hashPassword(request.getNewPassword()));
+        return memberRepository.save(member);
     }
 
     public void deleteMember(Long id) {

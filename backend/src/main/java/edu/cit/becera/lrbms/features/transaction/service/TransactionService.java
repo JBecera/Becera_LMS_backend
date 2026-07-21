@@ -5,12 +5,14 @@ import edu.cit.becera.lrbms.entities.Fine;
 import edu.cit.becera.lrbms.entities.Member;
 import edu.cit.becera.lrbms.entities.Transaction;
 import edu.cit.becera.lrbms.features.transaction.dto.CheckoutRequest;
+import edu.cit.becera.lrbms.features.transaction.dto.SelfCheckoutRequest;
 import edu.cit.becera.lrbms.features.transaction.dto.TransactionResponse;
 import edu.cit.becera.lrbms.repositories.BookRepository;
 import edu.cit.becera.lrbms.repositories.FineRepository;
 import edu.cit.becera.lrbms.repositories.MemberRepository;
 import edu.cit.becera.lrbms.repositories.ReservationRepository;
 import edu.cit.becera.lrbms.repositories.TransactionRepository;
+import edu.cit.becera.lrbms.security.CurrentUser;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -22,6 +24,8 @@ public class TransactionService {
 
     public static final int MAX_ACTIVE_LOANS = 3;
     public static final double FINE_PER_DAY_LATE = 5.0;
+    /** Members set their own return date when self-checking-out; it can't exceed this many days out. */
+    public static final int MAX_LOAN_DAYS = 14;
 
     private final TransactionRepository transactionRepository;
     private final MemberRepository memberRepository;
@@ -61,6 +65,36 @@ public class TransactionService {
         Book book = bookRepository.findById(request.getResourceId())
                 .orElseThrow(() -> new IllegalArgumentException("Resource not found"));
 
+        validateBorrowEligibility(member, book);
+        return performCheckout(member, book, request.getDueDate());
+    }
+
+    /**
+     * Lets a member book an in-stock title entirely online, without a librarian mediating the
+     * checkout - the member picks their own return date, within the library's borrowing rules.
+     */
+    public TransactionResponse selfCheckout(CurrentUser requester, SelfCheckoutRequest request) {
+        if (requester == null) {
+            throw new IllegalArgumentException("Login required");
+        }
+        if (request == null || request.getResourceId() == null) {
+            throw new IllegalArgumentException("Resource is required");
+        }
+        if (request.getDueDate() == null) {
+            throw new IllegalArgumentException("Return date is required");
+        }
+        validateDueDate(request.getDueDate());
+
+        Member member = memberRepository.findById(requester.id())
+                .orElseThrow(() -> new IllegalArgumentException("Member not found"));
+        Book book = bookRepository.findById(request.getResourceId())
+                .orElseThrow(() -> new IllegalArgumentException("Resource not found"));
+
+        validateBorrowEligibility(member, book);
+        return performCheckout(member, book, request.getDueDate());
+    }
+
+    private void validateBorrowEligibility(Member member, Book book) {
         if (fineRepository.existsByMemberAndPaymentStatus(member, "UNPAID")) {
             throw new IllegalStateException("Member has unpaid fines and cannot borrow additional items");
         }
@@ -73,10 +107,26 @@ public class TransactionService {
         if (activeLoans.size() >= MAX_ACTIVE_LOANS) {
             throw new IllegalStateException("Member has reached the borrowing limit of " + MAX_ACTIVE_LOANS + " items");
         }
+        boolean alreadyBorrowed = activeLoans.stream().anyMatch(t -> book.equals(t.getBook()));
+        if (alreadyBorrowed) {
+            throw new IllegalStateException("Member already has an active loan for this title");
+        }
         if (book.getAvailableCopies() == null || book.getAvailableCopies() <= 0) {
             throw new IllegalStateException("No copies available for checkout");
         }
+    }
 
+    private void validateDueDate(LocalDate dueDate) {
+        LocalDate today = LocalDate.now();
+        if (!dueDate.isAfter(today)) {
+            throw new IllegalArgumentException("Return date must be after the borrow date");
+        }
+        if (dueDate.isAfter(today.plusDays(MAX_LOAN_DAYS))) {
+            throw new IllegalArgumentException("Return date cannot be more than " + MAX_LOAN_DAYS + " days from today");
+        }
+    }
+
+    private TransactionResponse performCheckout(Member member, Book book, LocalDate dueDate) {
         book.setAvailableCopies(book.getAvailableCopies() - 1);
         bookRepository.save(book);
 
@@ -84,7 +134,7 @@ public class TransactionService {
         transaction.setMember(member);
         transaction.setBook(book);
         transaction.setCheckOutDate(LocalDate.now());
-        transaction.setDueDate(request.getDueDate());
+        transaction.setDueDate(dueDate);
         transaction.setStatus("ACTIVE");
         transaction = transactionRepository.save(transaction);
 

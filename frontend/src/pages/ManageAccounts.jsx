@@ -38,11 +38,11 @@ function ManageAccounts() {
     event.preventDefault();
     try {
       if (form.id) {
-        const payload = { ...form };
-        if (!payload.password) {
-          delete payload.password;
+        const { password, ...profileFields } = form;
+        await api.put(`/members/${form.id}`, profileFields);
+        if (password) {
+          await api.put(`/members/${form.id}/password`, { newPassword: password, confirmPassword: password });
         }
-        await api.put(`/members/${form.id}`, payload);
         setMessage("Account updated successfully.");
       } else {
         await api.post("/members", { ...form, role: "LIBRARIAN" });

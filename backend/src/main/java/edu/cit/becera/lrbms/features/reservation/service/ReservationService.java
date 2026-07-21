@@ -37,12 +37,12 @@ public class ReservationService {
     }
 
     public List<ReservationResponse> getAllReservations() {
-        return reservationRepository.findAll().stream().map(ReservationResponse::from).toList();
+        return reservationRepository.findAll().stream().map(this::toResponse).toList();
     }
 
     public List<ReservationResponse> getReservationsForMember(Long memberId) {
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new IllegalArgumentException("Member not found"));
-        return reservationRepository.findByMember(member).stream().map(ReservationResponse::from).toList();
+        return reservationRepository.findByMember(member).stream().map(this::toResponse).toList();
     }
 
     public ReservationResponse create(Long memberId, CreateReservationRequest request) {
@@ -52,8 +52,9 @@ public class ReservationService {
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new IllegalArgumentException("Member not found"));
         Book book = bookRepository.findById(request.getResourceId()).orElseThrow(() -> new IllegalArgumentException("Resource not found"));
 
+        // Reservations are the out-of-stock waitlist only - an in-stock title is borrowed directly.
         if (book.getAvailableCopies() != null && book.getAvailableCopies() > 0) {
-            throw new IllegalStateException("This title currently has copies available — no reservation needed");
+            throw new IllegalStateException("This title currently has copies available — borrow it instead of reserving it");
         }
         if (fineRepository.existsByMemberAndPaymentStatus(member, "UNPAID")) {
             throw new IllegalStateException("Member has unpaid fines and cannot make new reservations");
@@ -75,7 +76,9 @@ public class ReservationService {
         reservation.setBook(book);
         reservation.setReservationDate(LocalDate.now());
         reservation.setStatus("PENDING");
-        return ReservationResponse.from(reservationRepository.save(reservation));
+        reservation = reservationRepository.save(reservation);
+
+        return toResponse(reservation);
     }
 
     public ReservationResponse updateStatus(Long id, String status) {
@@ -84,7 +87,7 @@ public class ReservationService {
             throw new IllegalArgumentException("Status must be APPROVED or REJECTED");
         }
         reservation.setStatus(status);
-        return ReservationResponse.from(reservationRepository.save(reservation));
+        return toResponse(reservationRepository.save(reservation));
     }
 
     public void cancel(Long id, CurrentUser requester) {
@@ -98,5 +101,26 @@ public class ReservationService {
             throw new IllegalStateException("Only pending reservations can be cancelled");
         }
         reservationRepository.delete(reservation);
+    }
+
+    /**
+     * Waitlist position among other pending requests for the same title (1-based). Matched by id
+     * since reservations loaded across separate repository calls are distinct Java instances.
+     */
+    private Integer computeQueuePosition(Reservation reservation) {
+        if (!"PENDING".equals(reservation.getStatus())) {
+            return null;
+        }
+        List<Reservation> queue = reservationRepository.findByBookAndStatusOrderByIdAsc(reservation.getBook(), "PENDING");
+        for (int i = 0; i < queue.size(); i++) {
+            if (queue.get(i).getId().equals(reservation.getId())) {
+                return i + 1;
+            }
+        }
+        return null;
+    }
+
+    private ReservationResponse toResponse(Reservation reservation) {
+        return ReservationResponse.from(reservation, computeQueuePosition(reservation));
     }
 }

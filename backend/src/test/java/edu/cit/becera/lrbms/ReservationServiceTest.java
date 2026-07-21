@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
@@ -59,6 +60,7 @@ class ReservationServiceTest {
         lenient().when(fineRepository.existsByMemberAndPaymentStatus(member, "UNPAID")).thenReturn(false);
         lenient().when(transactionRepository.findByMemberAndStatus(member, "ACTIVE")).thenReturn(List.of());
         lenient().when(reservationRepository.findByMemberAndBookAndStatusIn(any(), any(), any())).thenReturn(List.of());
+        lenient().when(reservationRepository.findByBookAndStatusOrderByIdAsc(any(), any())).thenAnswer(inv -> List.of());
         lenient().when(reservationRepository.save(any(Reservation.class))).thenAnswer(inv -> {
             Reservation r = inv.getArgument(0);
             if (r.getId() == null) r.setId(5L);
@@ -96,6 +98,45 @@ class ReservationServiceTest {
         when(reservationRepository.findByMemberAndBookAndStatusIn(any(), any(), any())).thenReturn(List.of(existing));
 
         assertThrows(IllegalStateException.class, () -> reservationService.create(1L, request()));
+    }
+
+    @Test
+    void createShouldReportQueuePositionAmongPendingReservations() {
+        book.setAvailableCopies(0);
+
+        Reservation aheadInLine = new Reservation();
+        aheadInLine.setId(3L);
+        aheadInLine.setStatus("PENDING");
+
+        Reservation newlyCreated = new Reservation();
+        newlyCreated.setId(5L);
+        newlyCreated.setMember(member);
+        newlyCreated.setBook(book);
+        newlyCreated.setStatus("PENDING");
+
+        when(reservationRepository.save(any(Reservation.class))).thenReturn(newlyCreated);
+        when(reservationRepository.findByBookAndStatusOrderByIdAsc(book, "PENDING"))
+                .thenReturn(List.of(aheadInLine, newlyCreated));
+
+        ReservationResponse response = reservationService.create(1L, request());
+
+        assertEquals("PENDING", response.getStatus());
+        assertEquals(2, response.getQueuePosition());
+    }
+
+    @Test
+    void queuePositionShouldBeNullForNonPendingReservations() {
+        Reservation reservation = new Reservation();
+        reservation.setId(9L);
+        reservation.setMember(member);
+        reservation.setBook(book);
+        reservation.setStatus("APPROVED");
+        when(reservationRepository.findById(9L)).thenReturn(Optional.of(reservation));
+        when(reservationRepository.save(reservation)).thenReturn(reservation);
+
+        ReservationResponse response = reservationService.updateStatus(9L, "APPROVED");
+
+        assertNull(response.getQueuePosition());
     }
 
     @Test

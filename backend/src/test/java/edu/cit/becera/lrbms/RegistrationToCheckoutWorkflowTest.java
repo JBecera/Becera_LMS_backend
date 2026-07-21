@@ -18,7 +18,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * End-to-end workflow #1: a new student self-registers, logs in, searches the public catalog,
+ * End-to-end workflow #1: a new member self-registers, logs in, searches the public catalog,
  * and a librarian checks a book out to them and later checks it back in. Exercises FR-001
  * (login), FR-002 (search), FR-005 (registration), FR-006 (catalog CRUD) and FR-007
  * (check-in/check-out) as one integrated path through Member, Book and Transaction.
@@ -39,7 +39,7 @@ class RegistrationToCheckoutWorkflowTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    void studentRegistersLogsInAndLibrarianChecksOutAndInABook() {
+    void memberRegistersLogsInAndLibrarianChecksOutAndInABook() {
         // Step 1: self-registration (FR-005) - anonymous, no auth required
         Map<String, Object> registerRequest = Map.of(
                 "firstName", "Wanda",
@@ -50,15 +50,15 @@ class RegistrationToCheckoutWorkflowTest {
         ResponseEntity<Map> registerResponse = restTemplate.postForEntity("/api/members", registerRequest, Map.class);
         assertThat(registerResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(registerResponse.getBody().get("role")).isEqualTo("MEMBER");
-        assertThat(registerResponse.getBody().get("studentId")).isNotNull();
-        Number studentId = (Number) registerResponse.getBody().get("id");
+        assertThat(registerResponse.getBody().get("memberId")).isNotNull();
+        Number memberId = (Number) registerResponse.getBody().get("id");
 
         // Step 2: login (FR-001)
         Map<String, Object> loginRequest = Map.of("email", "wanda.reader@example.com", "password", "pass1234");
-        ResponseEntity<Map> studentLogin = restTemplate.postForEntity("/api/auth/login", loginRequest, Map.class);
-        assertThat(studentLogin.getStatusCode()).isEqualTo(HttpStatus.OK);
-        String studentToken = (String) studentLogin.getBody().get("token");
-        assertThat(studentToken).isNotBlank();
+        ResponseEntity<Map> memberLogin = restTemplate.postForEntity("/api/auth/login", loginRequest, Map.class);
+        assertThat(memberLogin.getStatusCode()).isEqualTo(HttpStatus.OK);
+        String memberToken = (String) memberLogin.getBody().get("token");
+        assertThat(memberToken).isNotBlank();
 
         // Step 3: public catalog search works without authentication (FR-002)
         ResponseEntity<List> searchResponse = restTemplate.getForEntity("/api/books/search?query=", List.class);
@@ -82,9 +82,9 @@ class RegistrationToCheckoutWorkflowTest {
         assertThat(bookResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         Number bookId = (Number) bookResponse.getBody().get("id");
 
-        // Step 5: librarian checks the book out to the student (FR-007)
+        // Step 5: librarian checks the book out to the member (FR-007)
         Map<String, Object> checkoutRequest = Map.of(
-                "memberId", studentId,
+                "memberId", memberId,
                 "resourceId", bookId,
                 "dueDate", LocalDate.now().plusDays(7).toString()
         );
@@ -94,12 +94,12 @@ class RegistrationToCheckoutWorkflowTest {
         assertThat(checkoutResponse.getBody().get("status")).isEqualTo("ACTIVE");
         Number transactionId = (Number) checkoutResponse.getBody().get("id");
 
-        // Step 6: the student sees the loan on their own account (ownership-scoped read)
-        ResponseEntity<List> studentTransactions = restTemplate.exchange(
-                "/api/transactions/member/" + studentId, HttpMethod.GET, new HttpEntity<>(authHeaders(studentToken)), List.class);
-        assertThat(studentTransactions.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(studentTransactions.getBody()).hasSize(1);
-        Map<String, Object> loan = (Map<String, Object>) studentTransactions.getBody().get(0);
+        // Step 6: the member sees the loan on their own account (ownership-scoped read)
+        ResponseEntity<List> memberTransactions = restTemplate.exchange(
+                "/api/transactions/member/" + memberId, HttpMethod.GET, new HttpEntity<>(authHeaders(memberToken)), List.class);
+        assertThat(memberTransactions.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(memberTransactions.getBody()).hasSize(1);
+        Map<String, Object> loan = (Map<String, Object>) memberTransactions.getBody().get(0);
         assertThat(loan.get("resourceTitle")).isEqualTo("Clean Architecture");
 
         // Step 7: librarian checks the book back in (FR-007) and availability is restored

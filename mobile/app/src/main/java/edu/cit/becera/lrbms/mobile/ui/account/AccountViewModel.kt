@@ -19,7 +19,7 @@ data class AccountUiState(
     val phoneNumber: String = "",
     val address: String = "",
     val password: String = "",
-    val studentId: String? = null,
+    val memberId: String? = null,
     val dateRegistered: String? = null,
     val message: String? = null
 )
@@ -41,7 +41,7 @@ class AccountViewModel(application: Application) : AndroidViewModel(application)
                     email = account.email,
                     phoneNumber = account.phoneNumber ?: "",
                     address = account.address ?: "",
-                    studentId = account.studentId,
+                    memberId = account.memberId,
                     dateRegistered = account.dateRegistered
                 )
             } catch (e: Exception) {

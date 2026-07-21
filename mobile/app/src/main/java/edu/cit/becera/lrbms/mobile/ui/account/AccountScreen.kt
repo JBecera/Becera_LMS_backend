@@ -46,8 +46,8 @@ fun AccountScreen(onSignedOut: () -> Unit, viewModel: AccountViewModel = viewMod
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text("My Account", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF0F172A))
-        state.studentId?.let {
-            Text("Student ID: $it" + (state.dateRegistered?.let { d -> " · Registered $d" } ?: ""), fontSize = 12.sp, color = Color(0xFF64748B))
+        state.memberId?.let {
+            Text("Member ID: $it" + (state.dateRegistered?.let { d -> " · Registered $d" } ?: ""), fontSize = 12.sp, color = Color(0xFF64748B))
         }
 
         state.message?.let { Text(it, fontSize = 13.sp, color = Color(0xFF4F46E5)) }
