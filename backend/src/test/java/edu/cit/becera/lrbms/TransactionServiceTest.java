@@ -103,6 +103,11 @@ class TransactionServiceTest {
     }
 
     @Test
+    void checkoutShouldRejectSameDayDueDate() {
+        assertThrows(IllegalArgumentException.class, () -> transactionService.checkout(request(LocalDate.now())));
+    }
+
+    @Test
     void checkoutShouldRejectWhenMemberHasUnpaidFines() {
         when(fineRepository.existsByMemberAndPaymentStatus(member, "UNPAID")).thenReturn(true);
 

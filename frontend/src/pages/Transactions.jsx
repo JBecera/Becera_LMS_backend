@@ -10,8 +10,10 @@ function toInputValue(date) {
   return date.toISOString().slice(0, 10);
 }
 
-function todayInputValue() {
-  return toInputValue(new Date());
+function minDueDate() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return toInputValue(d);
 }
 
 function defaultDueDate() {
@@ -52,8 +54,8 @@ function Transactions() {
       setMessage({ type: "error", text: "Choose a member and a resource before checking out." });
       return;
     }
-    if (!form.dueDate || form.dueDate < todayInputValue()) {
-      setMessage({ type: "error", text: "Due date cannot be in the past." });
+    if (!form.dueDate || form.dueDate < minDueDate()) {
+      setMessage({ type: "error", text: "Due date must be after today." });
       return;
     }
     try {
@@ -111,7 +113,7 @@ function Transactions() {
               id="dueDate"
               className="form-input"
               type="date"
-              min={todayInputValue()}
+              min={minDueDate()}
               value={form.dueDate}
               onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
             />

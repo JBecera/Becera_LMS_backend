@@ -60,8 +60,8 @@ public class TransactionService {
         if (request.getDueDate() == null) {
             throw new IllegalArgumentException("Due date is required");
         }
-        if (request.getDueDate().isBefore(AppClock.today())) {
-            throw new IllegalArgumentException("Due date cannot be in the past");
+        if (!request.getDueDate().isAfter(AppClock.today())) {
+            throw new IllegalArgumentException("Due date must be after today");
         }
 
         Member member = memberRepository.findById(request.getMemberId())
