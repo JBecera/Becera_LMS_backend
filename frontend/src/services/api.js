@@ -7,6 +7,41 @@ const COLD_START_RETRY_DELAY_MS = 2000;
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Decodes a JWT's exp claim without verifying the signature (client-side only,
+// purely to tell an expired session apart from a genuine authorization denial).
+const isTokenExpired = (token) => {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    if (!payload.exp) return false;
+    return payload.exp * 1000 <= Date.now();
+  } catch {
+    return true; // an unparseable token is as good as no session
+  }
+};
+
+const clearSession = () => {
+  localStorage.removeItem("user");
+  localStorage.removeItem("token");
+};
+
+// The backend answers protected requests with 401/403 once the access token
+// lapses. When that happens we end the stale session and send the user back to
+// login instead of surfacing a raw error. A 403 on a still-valid token is a real
+// authorization denial for that action, so we leave the session intact there.
+const handleExpiredSession = (error) => {
+  const status = error.response?.status;
+  if (status !== 401 && status !== 403) return;
+
+  const token = localStorage.getItem("token");
+  if (!token) return;
+  if (status === 403 && !isTokenExpired(token)) return;
+
+  clearSession();
+  if (window.location.pathname !== "/login") {
+    window.location.assign("/login");
+  }
+};
+
 // Render's free tier spins the backend down when idle; the first request or
 // two after a spin-down can bounce with a network error or a bare 404 before
 // the instance is back up. Retry those a couple of times before giving up.
@@ -40,9 +75,18 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
-/*  */
-api.interceptors.response.use((response) => response, retryOnColdStart);
 
+api.interceptors.response.use((response) => response, async (error) => {
+  try {
+    return await retryOnColdStart(error);
+  } catch (retried) {
+    handleExpiredSession(retried);
+    return Promise.reject(retried);
+  }
+});
+
+// Login uses its own instance: a 401 here means "invalid credentials", which the
+// login page handles directly — it must never trigger the redirect above.
 export const authApi = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000,
