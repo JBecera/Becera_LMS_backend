@@ -3,6 +3,7 @@ import AppLayout from "../components/layout/AppLayout";
 import Badge from "../components/ui/Badge";
 import EmptyState from "../components/ui/EmptyState";
 import api from "../services/api";
+import { PASSWORD_HINT, passwordStrengthError } from "../utils/password";
 
 const emptyForm = { id: null, firstName: "", lastName: "", email: "", password: "", role: "LIBRARIAN" };
 
@@ -36,6 +37,14 @@ function ManageAccounts() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    // On create the password is required; on edit it's optional but still must be strong if set.
+    if (!form.id || form.password) {
+      const passwordError = passwordStrengthError(form.password);
+      if (passwordError) {
+        setMessage(passwordError);
+        return;
+      }
+    }
     try {
       if (form.id) {
         const { password, ...profileFields } = form;
@@ -102,6 +111,7 @@ function ManageAccounts() {
             required={!form.id}
           />
           <button className="button primary auto" type="submit">{form.id ? "Save changes" : "Create librarian"}</button>
+          <p className="field-hint" style={{ gridColumn: "1 / -1", margin: 0 }}>{PASSWORD_HINT}</p>
         </form>
       </section>
 

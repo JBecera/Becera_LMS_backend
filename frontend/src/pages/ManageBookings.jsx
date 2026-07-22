@@ -2,21 +2,14 @@ import { useEffect, useState } from "react";
 import AppLayout from "../components/layout/AppLayout";
 import Badge from "../components/ui/Badge";
 import EmptyState from "../components/ui/EmptyState";
-import {
-  cancelReservation,
-  getMemberReservations,
-  getReservations,
-  updateReservationStatus,
-} from "../services/reservationService";
-import { getTransactions } from "../services/transactionService";
+import { cancelReservation, getReservations, updateReservationStatus } from "../services/reservationService";
+import { checkInResource, checkOutResource, getTransactions } from "../services/transactionService";
 import { getFines } from "../services/fineService";
-import { checkOutResource } from "../services/transactionService";
 
 const PICKUP_WINDOW_DAYS = 3;
 
 function daysBetween(from, to) {
-  const diff = new Date(to) - new Date(from);
-  return Math.floor(diff / (1000 * 60 * 60 * 24));
+  return Math.floor((new Date(to) - new Date(from)) / (1000 * 60 * 60 * 24));
 }
 
 function toInputValue(date) {
@@ -35,84 +28,7 @@ function minDueDate() {
   return toInputValue(d);
 }
 
-function MemberBookings({ user }) {
-  const [reservations, setReservations] = useState([]);
-  const [message, setMessage] = useState("");
-
-  const load = () => {
-    getMemberReservations(user.id)
-      .then((res) => setReservations(res.data || []))
-      .catch(() => setMessage("Unable to load your bookings right now."));
-  };
-
-  useEffect(() => {
-    if (!user.id) return;
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleCancel = async (id) => {
-    try {
-      await cancelReservation(id);
-      setMessage("Booking cancelled.");
-      load();
-    } catch (error) {
-      setMessage(error.response?.data?.error || "Unable to cancel this booking.");
-    }
-  };
-
-  return (
-    <AppLayout
-      eyebrow="Bookings"
-      title="My bookings"
-      description="Track the resources you've booked and their approval status."
-    >
-      {message ? <p className="message-banner">{message}</p> : null}
-
-      <section className="panel-card" style={{ marginTop: 0 }}>
-        {reservations.length === 0 ? (
-          <EmptyState icon="reserve" title="No bookings" description="Book a title from the catalog to see it here." />
-        ) : (
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Resource</th>
-                  <th>Booked on</th>
-                  <th>Status</th>
-                  <th>Details</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {reservations.map((r) => (
-                  <tr key={r.id}>
-                    <td>{r.resourceTitle || r.resourceId}</td>
-                    <td className="mono">{r.reservationDate}</td>
-                    <td>
-                      <Badge status={r.status?.toLowerCase()} />
-                    </td>
-                    <td>
-                      {r.status === "REJECTED" && r.reason ? `Reason: ${r.reason}` : null}
-                      {r.status === "PENDING" && r.queuePosition ? `#${r.queuePosition} in line` : null}
-                    </td>
-                    <td>
-                      {r.status === "PENDING" ? (
-                        <button className="table-action danger" onClick={() => handleCancel(r.id)}>Cancel</button>
-                      ) : null}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-    </AppLayout>
-  );
-}
-
-function LibrarianBookings() {
+function ManageBookings() {
   const [reservations, setReservations] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [fines, setFines] = useState([]);
@@ -147,27 +63,30 @@ function LibrarianBookings() {
 
   const pending = reservations.filter((r) => r.status === "PENDING");
   const approved = reservations.filter((r) => r.status === "APPROVED");
+  const activeLoans = transactions.filter((t) => t.status === "ACTIVE");
   const history = reservations.filter((r) => r.status === "REJECTED" || r.status === "COMPLETED");
+
+  const notify = (type, text) => setMessage({ type, text });
 
   const handleApprove = async (id) => {
     try {
       await updateReservationStatus(id, "APPROVED");
-      setMessage({ type: "success", text: "Booking approved." });
+      notify("success", "Booking approved.");
       load();
     } catch (error) {
-      setMessage({ type: "error", text: error.response?.data?.error || "Unable to approve this booking." });
+      notify("error", error.response?.data?.error || "Unable to approve this booking.");
     }
   };
 
   const handleRejectSubmit = async (id) => {
     const reason = (rejectDrafts[id] || "").trim();
     if (!reason) {
-      setMessage({ type: "error", text: "A rejection reason is required." });
+      notify("error", "A rejection reason is required.");
       return;
     }
     try {
       await updateReservationStatus(id, "REJECTED", reason);
-      setMessage({ type: "success", text: "Booking rejected." });
+      notify("success", "Booking rejected.");
       setRejectDrafts((prev) => {
         const next = { ...prev };
         delete next[id];
@@ -175,28 +94,38 @@ function LibrarianBookings() {
       });
       load();
     } catch (error) {
-      setMessage({ type: "error", text: error.response?.data?.error || "Unable to reject this booking." });
+      notify("error", error.response?.data?.error || "Unable to reject this booking.");
     }
   };
 
-  const handleCheckout = async (reservation) => {
+  const handlePickup = async (reservation) => {
     const dueDate = checkoutDrafts[reservation.id] || defaultDueDate();
     try {
       await checkOutResource({ memberId: reservation.memberId, resourceId: reservation.resourceId, dueDate });
-      setMessage({ type: "success", text: "Marked as checked out." });
+      notify("success", "Marked as picked up.");
       load();
     } catch (error) {
-      setMessage({ type: "error", text: error.response?.data?.error || "Unable to check this member out." });
+      notify("error", error.response?.data?.error || "Unable to check this member out.");
     }
   };
 
-  const handleCancelExpired = async (id) => {
+  const handleCancel = async (id) => {
     try {
       await cancelReservation(id);
-      setMessage({ type: "success", text: "Expired booking cancelled." });
+      notify("success", "Booking cancelled.");
       load();
     } catch (error) {
-      setMessage({ type: "error", text: error.response?.data?.error || "Unable to cancel this booking." });
+      notify("error", error.response?.data?.error || "Unable to cancel this booking.");
+    }
+  };
+
+  const handleReturn = async (id) => {
+    try {
+      await checkInResource(id);
+      notify("success", "Marked as returned.");
+      load();
+    } catch (error) {
+      notify("error", error.response?.data?.error || "Unable to record this return.");
     }
   };
 
@@ -204,7 +133,7 @@ function LibrarianBookings() {
     <AppLayout
       eyebrow="Bookings"
       title="Booking approvals"
-      description="Approve or reject pending bookings, check members out on pickup, and clear expired holds."
+      description="Approve or reject requests, hand titles over at pickup, and record returns — the full booking lifecycle in one place."
     >
       {message ? (
         <p className={`message-banner${message.type === "error" ? " error" : ""}`}>{message.text}</p>
@@ -223,6 +152,7 @@ function LibrarianBookings() {
                   <h3>{r.resourceTitle}</h3>
                   <p className="catalog-meta">{r.memberName}</p>
                   <div className="book-summary-meta">
+                    <span><strong>Pickup date:</strong> {r.pickupDate || "—"}</span>
                     <span><strong>Booked on:</strong> {r.reservationDate}</span>
                     <span><strong>Active loans:</strong> {activeLoanCount(r.memberId)}</span>
                     <span><strong>Unpaid fines:</strong> ₱{unpaidFineTotal(r.memberId).toFixed(2)}</span>
@@ -272,9 +202,9 @@ function LibrarianBookings() {
       </section>
 
       <section className="panel-card">
-        <h2>Approved — awaiting pickup</h2>
+        <h2>Awaiting pickup</h2>
         {approved.length === 0 ? (
-          <EmptyState icon="reserve" title="Nothing awaiting pickup" description="Approved bookings will appear here until the member is checked out." />
+          <EmptyState icon="reserve" title="Nothing awaiting pickup" description="Approved bookings appear here until the member collects them." />
         ) : (
           <div className="table-wrap">
             <table className="data-table">
@@ -305,7 +235,7 @@ function LibrarianBookings() {
                       </td>
                       <td>
                         {expired ? (
-                          <button className="table-action danger" onClick={() => handleCancelExpired(r.id)}>Cancel expired</button>
+                          <button className="table-action danger" onClick={() => handleCancel(r.id)}>Cancel expired</button>
                         ) : (
                           <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
                             <input
@@ -315,10 +245,47 @@ function LibrarianBookings() {
                               value={checkoutDrafts[r.id] || defaultDueDate()}
                               onChange={(e) => setCheckoutDrafts((prev) => ({ ...prev, [r.id]: e.target.value }))}
                             />
-                            <button className="table-action" onClick={() => handleCheckout(r)}>Mark checked out</button>
+                            <button className="table-action" onClick={() => handlePickup(r)}>Mark picked up</button>
                           </div>
                         )}
                       </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="panel-card">
+        <h2>On loan / Returns</h2>
+        {activeLoans.length === 0 ? (
+          <EmptyState icon="transactions" title="Nothing on loan" description="Checked-out titles appear here until they're returned." />
+        ) : (
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th>Resource</th>
+                  <th>Checked out</th>
+                  <th>Due</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {activeLoans.map((t) => {
+                  const overdue = t.dueDate && new Date(t.dueDate) < new Date();
+                  return (
+                    <tr key={t.id}>
+                      <td>{t.memberName || t.memberId}</td>
+                      <td>{t.resourceTitle || t.resourceId}</td>
+                      <td className="mono">{t.checkOutDate}</td>
+                      <td className="mono">{t.dueDate}</td>
+                      <td><Badge status={overdue ? "overdue" : "checked-out"}>{overdue ? "Overdue" : "On loan"}</Badge></td>
+                      <td><button className="table-action" onClick={() => handleReturn(t.id)}>Mark returned</button></td>
                     </tr>
                   );
                 })}
@@ -363,11 +330,4 @@ function LibrarianBookings() {
   );
 }
 
-function Reservations() {
-  const user = JSON.parse(localStorage.getItem("user")) || {};
-  const isLibrarian = user.role?.toUpperCase() === "LIBRARIAN" || user.role?.toUpperCase() === "ADMIN";
-
-  return isLibrarian ? <LibrarianBookings /> : <MemberBookings user={user} />;
-}
-
-export default Reservations;
+export default ManageBookings;

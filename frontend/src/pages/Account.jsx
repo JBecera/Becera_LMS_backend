@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import AppLayout from "../components/layout/AppLayout";
 import Icon from "../components/ui/Icon";
 import { getMember, updateMember, changePassword } from "../services/memberService";
+import { PASSWORD_HINT, passwordStrengthError } from "../utils/password";
 
 const initialProfile = { firstName: "", lastName: "", email: "", phoneNumber: "", address: "" };
 const initialPasswordForm = { currentPassword: "", newPassword: "", confirmPassword: "" };
@@ -79,8 +80,8 @@ function Account() {
     }
     if (!passwordForm.newPassword) {
       errors.newPassword = "Enter a new password.";
-    } else if (passwordForm.newPassword.length < 8) {
-      errors.newPassword = "New password must be at least 8 characters long.";
+    } else if (passwordStrengthError(passwordForm.newPassword)) {
+      errors.newPassword = passwordStrengthError(passwordForm.newPassword);
     } else if (passwordForm.currentPassword && passwordForm.newPassword === passwordForm.currentPassword) {
       errors.newPassword = "New password must be different from your current password.";
     }
@@ -212,7 +213,7 @@ function Account() {
                 {passwordErrors.newPassword ? (
                   <p className="field-error">{passwordErrors.newPassword}</p>
                 ) : (
-                  <p className="field-hint">At least 8 characters.</p>
+                  <p className="field-hint">{PASSWORD_HINT}</p>
                 )}
               </div>
               <div className="form-group">

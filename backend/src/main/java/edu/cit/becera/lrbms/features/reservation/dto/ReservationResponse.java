@@ -15,6 +15,7 @@ public class ReservationResponse {
     private Integer queuePosition;
     private String reason;
     private LocalDate approvedAt;
+    private LocalDate pickupDate;
 
     public static ReservationResponse from(Reservation reservation) {
         return from(reservation, null);
@@ -32,6 +33,7 @@ public class ReservationResponse {
         response.queuePosition = queuePosition;
         response.reason = reservation.getReason();
         response.approvedAt = reservation.getApprovedAt();
+        response.pickupDate = reservation.getPickupDate();
         return response;
     }
 
@@ -45,4 +47,5 @@ public class ReservationResponse {
     public Integer getQueuePosition() { return queuePosition; }
     public String getReason() { return reason; }
     public LocalDate getApprovedAt() { return approvedAt; }
+    public LocalDate getPickupDate() { return pickupDate; }
 }

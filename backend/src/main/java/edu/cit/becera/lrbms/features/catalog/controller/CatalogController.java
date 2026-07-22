@@ -1,12 +1,16 @@
 package edu.cit.becera.lrbms.features.catalog.controller;
 
 import edu.cit.becera.lrbms.entities.Book;
+import edu.cit.becera.lrbms.features.catalog.dto.BookAvailabilityResponse;
 import edu.cit.becera.lrbms.features.catalog.dto.BookRequest;
+import edu.cit.becera.lrbms.features.catalog.service.AvailabilityService;
 import edu.cit.becera.lrbms.features.catalog.service.CatalogService;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 //Catalog CRUD implementation
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -14,9 +18,11 @@ import java.util.Map;
 @RequestMapping("/api/books")
 public class CatalogController {
     private final CatalogService catalogService;
+    private final AvailabilityService availabilityService;
 
-    public CatalogController(CatalogService catalogService) {
+    public CatalogController(CatalogService catalogService, AvailabilityService availabilityService) {
         this.catalogService = catalogService;
+        this.availabilityService = availabilityService;
     }
 
     @GetMapping
@@ -27,6 +33,12 @@ public class CatalogController {
     @GetMapping("/search")
     public List<Book> searchBooks(@RequestParam(defaultValue = "") String query) {
         return catalogService.searchBooks(query);
+    }
+
+    @GetMapping("/availability")
+    public List<BookAvailabilityResponse> availability(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return availabilityService.availabilityOn(date);
     }
 
     @GetMapping("/{id}")

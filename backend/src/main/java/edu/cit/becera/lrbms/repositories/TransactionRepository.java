@@ -1,5 +1,6 @@
 package edu.cit.becera.lrbms.repositories;
 
+import edu.cit.becera.lrbms.entities.Book;
 import edu.cit.becera.lrbms.entities.Member;
 import edu.cit.becera.lrbms.entities.Transaction;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,4 +15,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     List<Transaction> findByMemberAndStatus(Member member, String status);
 
     long countByMemberAndStatus(Member member, String status);
+
+    List<Transaction> findByStatus(String status);
+
+    List<Transaction> findByBookAndStatus(Book book, String status);
 }

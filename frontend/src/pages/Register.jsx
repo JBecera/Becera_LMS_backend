@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../components/Button";
 import { addMember } from "../services/memberService";
+import { PASSWORD_HINT, passwordStrengthError } from "../utils/password";
 
 function Register() {
   const navigate = useNavigate();
@@ -15,6 +16,11 @@ function Register() {
 
   const handleRegister = async () => {
     setMessage("");
+    const passwordError = passwordStrengthError(member.password);
+    if (passwordError) {
+      setMessage(passwordError);
+      return;
+    }
     try {
       await addMember({ ...member, role: "MEMBER" });
       setMessage("Registration successful. You can sign in now.");
@@ -75,6 +81,7 @@ function Register() {
           <div className="form-group">
             <label className="form-label" htmlFor="password">Password</label>
             <input id="password" className="form-input" type="password" name="password" placeholder="Create a strong password" value={member.password} onChange={handleChange} />
+            <p className="field-hint">{PASSWORD_HINT}</p>
           </div>
 
           {message ? <p className={`message-banner ${message.includes("successful") ? "" : "error"}`}>{message}</p> : null}

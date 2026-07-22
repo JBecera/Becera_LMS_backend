@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import AppLayout from "../components/layout/AppLayout";
 import EmptyState from "../components/ui/EmptyState";
 import { addMember, getMembers } from "../services/memberService";
+import { PASSWORD_HINT, passwordStrengthError } from "../utils/password";
 
 const emptyForm = { firstName: "", lastName: "", email: "", password: "" };
 
@@ -29,6 +30,11 @@ function Members() {
 
   const handleRegister = async (event) => {
     event.preventDefault();
+    const passwordError = passwordStrengthError(form.password);
+    if (passwordError) {
+      setMessage(passwordError);
+      return;
+    }
     try {
       await addMember({ ...form, role: "MEMBER" });
       setMessage(`Member account created for ${form.firstName} ${form.lastName}.`);
@@ -55,6 +61,7 @@ function Members() {
           <input className="form-input" type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
           <input className="form-input" type="password" placeholder="Temporary password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
           <button className="button primary auto" type="submit">Register member</button>
+          <p className="field-hint" style={{ gridColumn: "1 / -1", margin: 0 }}>{PASSWORD_HINT}</p>
         </form>
       </section>
 

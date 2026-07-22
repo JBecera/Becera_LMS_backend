@@ -52,6 +52,7 @@ public class MembershipService {
         if (request.getPassword() == null || request.getPassword().isBlank()) {
             throw new IllegalArgumentException("Password is required");
         }
+        validatePasswordStrength(request.getPassword());
         if (request.getFirstName() == null || request.getFirstName().isBlank()) {
             throw new IllegalArgumentException("First name is required");
         }
@@ -140,9 +141,7 @@ public class MembershipService {
         if (request == null || request.getNewPassword() == null || request.getNewPassword().isBlank()) {
             throw new IllegalArgumentException("New password is required");
         }
-        if (request.getNewPassword().length() < 8) {
-            throw new IllegalArgumentException("New password must be at least 8 characters long");
-        }
+        validatePasswordStrength(request.getNewPassword());
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new IllegalArgumentException("New password and confirmation do not match");
         }
@@ -162,6 +161,21 @@ public class MembershipService {
 
     public void deleteMember(Long id) {
         memberRepository.deleteById(id);
+    }
+
+    /**
+     * A password must be at least 8 characters and mix letters with digits, so short or
+     * trivial values like "123" or "password" are rejected at registration and on reset alike.
+     */
+    private void validatePasswordStrength(String password) {
+        if (password == null || password.length() < 8) {
+            throw new IllegalArgumentException("Password must be at least 8 characters long");
+        }
+        boolean hasLetter = password.chars().anyMatch(Character::isLetter);
+        boolean hasDigit = password.chars().anyMatch(Character::isDigit);
+        if (!hasLetter || !hasDigit) {
+            throw new IllegalArgumentException("Password must include at least one letter and one number");
+        }
     }
 
     private String hashPassword(String password) {

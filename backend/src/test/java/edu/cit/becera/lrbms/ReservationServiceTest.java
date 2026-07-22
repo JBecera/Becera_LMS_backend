@@ -3,6 +3,8 @@ package edu.cit.becera.lrbms;
 import edu.cit.becera.lrbms.entities.Book;
 import edu.cit.becera.lrbms.entities.Member;
 import edu.cit.becera.lrbms.entities.Reservation;
+import edu.cit.becera.lrbms.entities.Transaction;
+import edu.cit.becera.lrbms.util.AppClock;
 import edu.cit.becera.lrbms.features.reservation.dto.CreateReservationRequest;
 import edu.cit.becera.lrbms.features.reservation.dto.ReservationResponse;
 import edu.cit.becera.lrbms.features.reservation.service.ReservationService;
@@ -54,12 +56,16 @@ class ReservationServiceTest {
         book = new Book();
         book.setId(2L);
         book.setTitle("Clean Code");
+        book.setTotalCopies(1);
+        book.setAvailableCopies(1);
 
         lenient().when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
         lenient().when(bookRepository.findById(2L)).thenReturn(Optional.of(book));
         lenient().when(fineRepository.existsByMemberAndPaymentStatus(member, "UNPAID")).thenReturn(false);
         lenient().when(transactionRepository.findByMemberAndStatus(member, "ACTIVE")).thenReturn(List.of());
+        lenient().when(transactionRepository.findByBookAndStatus(any(), any())).thenReturn(List.of());
         lenient().when(reservationRepository.findByMemberAndBookAndStatusIn(any(), any(), any())).thenReturn(List.of());
+        lenient().when(reservationRepository.findByBookAndStatusIn(any(), any())).thenReturn(List.of());
         lenient().when(reservationRepository.findByBookAndStatusOrderByIdAsc(any(), any())).thenAnswer(inv -> List.of());
         lenient().when(reservationRepository.save(any(Reservation.class))).thenAnswer(inv -> {
             Reservation r = inv.getArgument(0);
@@ -75,8 +81,8 @@ class ReservationServiceTest {
     }
 
     @Test
-    void createShouldSucceedWhenCopiesAreAvailable() {
-        book.setAvailableCopies(3);
+    void createShouldSucceedWhenACopyIsFreeOnThePickupDate() {
+        book.setTotalCopies(3);
 
         ReservationResponse response = reservationService.create(1L, request());
 
@@ -84,12 +90,16 @@ class ReservationServiceTest {
     }
 
     @Test
-    void createShouldSucceedWhenAllCopiesUnavailable() {
-        book.setAvailableCopies(0);
+    void createShouldRejectWhenNoCopiesFreeOnThePickupDate() {
+        book.setTotalCopies(1);
+        // The single copy is out on loan across today (the default pickup date), so nothing is free.
+        Transaction loan = new Transaction();
+        loan.setCheckOutDate(AppClock.today().minusDays(2));
+        loan.setDueDate(AppClock.today().plusDays(5));
+        loan.setStatus("ACTIVE");
+        when(transactionRepository.findByBookAndStatus(book, "ACTIVE")).thenReturn(List.of(loan));
 
-        ReservationResponse response = reservationService.create(1L, request());
-
-        assertEquals("PENDING", response.getStatus());
+        assertThrows(IllegalStateException.class, () -> reservationService.create(1L, request()));
     }
 
     @Test

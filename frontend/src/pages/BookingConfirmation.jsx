@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import AppLayout from "../components/layout/AppLayout";
 import Badge from "../components/ui/Badge";
@@ -7,7 +7,12 @@ import Stamp from "../components/ui/Stamp";
 import { getBook } from "../services/bookService";
 import { createReservation } from "../services/reservationService";
 
-function formatDate(date) {
+function toInputValue(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function formatDate(value) {
+  const date = value instanceof Date ? value : new Date(`${value}T00:00:00`);
   return date.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
 }
 
@@ -19,11 +24,18 @@ function BookingConfirmation() {
   const [loadingBook, setLoadingBook] = useState(!location.state?.book);
   const [loadError, setLoadError] = useState("");
 
+  const today = useMemo(() => new Date(), []);
+  const minDate = toInputValue(today);
+  const maxDate = useMemo(() => {
+    const d = new Date(today);
+    d.setDate(d.getDate() + 30);
+    return toInputValue(d);
+  }, [today]);
+
+  const [pickupDate, setPickupDate] = useState(location.state?.pickupDate || toInputValue(today));
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
-
-  const today = new Date();
 
   useEffect(() => {
     if (book || !bookId) return;
@@ -35,14 +47,12 @@ function BookingConfirmation() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookId]);
 
-  const inStock = book?.availableCopies > 0;
-
   const handleConfirm = async (event) => {
     event.preventDefault();
     setSubmitError("");
     setSubmitting(true);
     try {
-      const response = await createReservation(book.id);
+      const response = await createReservation(book.id, pickupDate);
       setResult(response.data);
     } catch (err) {
       setSubmitError(err.response?.data?.error || "Unable to complete this booking.");
@@ -76,18 +86,15 @@ function BookingConfirmation() {
     return (
       <AppLayout eyebrow="Booking" title="Booking submitted" description="A librarian will review your request before it's ready for pickup.">
         <section className="panel-card confirmation-success" style={{ marginTop: 0 }}>
-          <Stamp value={inStock ? "✓" : result.queuePosition || "•"} label={inStock ? "Pending" : "In line"} tone="warn" />
+          <Stamp value="✓" label="Pending" tone="warn" />
           <div>
             <h2 style={{ marginBottom: "0.35rem" }}>{book.title}</h2>
             <p className="panel-sub" style={{ marginBottom: "1.25rem" }}>
-              {inStock
-                ? "A librarian will approve or reject your booking soon. You'll have 3 days to pick it up once approved."
-                : result.queuePosition
-                  ? `You're #${result.queuePosition} in line. A librarian will approve your booking once a copy is free.`
-                  : "A librarian will approve your booking once a copy is free."}
+              Requested for pickup on {formatDate(result.pickupDate || pickupDate)}. A librarian will approve or reject
+              your booking soon — once approved, you'll have 3 days to collect it.
             </p>
             <div className="confirmation-actions">
-              <Link to="/my-borrowing" className="button primary auto">View My Borrowing</Link>
+              <Link to="/bookings" className="button primary auto">View My Bookings</Link>
               <Link to="/catalog" className="button secondary auto">Back to catalog</Link>
             </div>
           </div>
@@ -100,11 +107,7 @@ function BookingConfirmation() {
     <AppLayout
       eyebrow="Booking"
       title="Confirm your booking"
-      description={
-        inStock
-          ? "This title is in stock — book it for pickup and a librarian will confirm before you collect it."
-          : "This title is fully checked out — join the waitlist and we'll hold a copy for you when one returns."
-      }
+      description="Choose when you&rsquo;d like to pick this up. A librarian confirms every booking before collection."
     >
       <section className="panel-card book-summary-card" style={{ marginTop: 0 }}>
         <div className="catalog-cover book-summary-cover">
@@ -114,26 +117,30 @@ function BookingConfirmation() {
           <h2>{book.title}</h2>
           <p className="panel-sub" style={{ margin: 0 }}>{book.author}</p>
           <div className="book-summary-meta">
+            <span><strong>Category:</strong> {book.category}</span>
             <span><strong>ISBN:</strong> {book.isbn}</span>
-            {inStock ? <span><strong>Available:</strong> {book.availableCopies}</span> : null}
           </div>
-          <Badge status={inStock ? "available" : "unavailable"}>
-            {inStock ? `${book.availableCopies} available` : "Out of stock"}
-          </Badge>
         </div>
       </section>
 
       <section className="panel-card">
         <h2>Booking details</h2>
         {submitError ? <p className="message-banner error">{submitError}</p> : null}
-        <div className="book-summary-meta">
-          <span><strong>Booking date:</strong> {formatDate(today)}</span>
-          <span>
-            <strong>Expected pickup:</strong>{" "}
-            {inStock ? "Once a librarian approves your booking" : "As soon as a copy is returned — we'll notify you"}
-          </span>
-          <span><strong>Status:</strong> <Badge status="pending">Pending</Badge></span>
-        </div>
+        <form onSubmit={handleConfirm} className="form-grid" noValidate>
+          <div className="form-group">
+            <label className="form-label" htmlFor="pickupDate">Pickup date</label>
+            <input
+              id="pickupDate"
+              className="form-input"
+              type="date"
+              min={minDate}
+              max={maxDate}
+              value={pickupDate}
+              onChange={(event) => setPickupDate(event.target.value)}
+            />
+            <p className="field-hint">Up to 30 days from today. Status starts as <Badge status="pending">Pending</Badge></p>
+          </div>
+        </form>
       </section>
 
       <section className="panel-card confirmation-actions-card">

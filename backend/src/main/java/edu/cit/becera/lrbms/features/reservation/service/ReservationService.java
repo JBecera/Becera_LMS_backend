@@ -3,6 +3,8 @@ package edu.cit.becera.lrbms.features.reservation.service;
 import edu.cit.becera.lrbms.entities.Book;
 import edu.cit.becera.lrbms.entities.Member;
 import edu.cit.becera.lrbms.entities.Reservation;
+import edu.cit.becera.lrbms.features.catalog.service.AvailabilityCalculator;
+import edu.cit.becera.lrbms.features.catalog.service.AvailabilityService;
 import edu.cit.becera.lrbms.features.reservation.dto.CreateReservationRequest;
 import edu.cit.becera.lrbms.features.reservation.dto.ReservationResponse;
 import edu.cit.becera.lrbms.repositories.BookRepository;
@@ -15,10 +17,14 @@ import edu.cit.becera.lrbms.util.AppClock;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
 public class ReservationService {
+
+    /** A booking can be placed at most this many days ahead of today. */
+    public static final int HORIZON_DAYS = 30;
 
     private final ReservationRepository reservationRepository;
     private final MemberRepository memberRepository;
@@ -52,11 +58,20 @@ public class ReservationService {
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new IllegalArgumentException("Member not found"));
         Book book = bookRepository.findById(request.getResourceId()).orElseThrow(() -> new IllegalArgumentException("Resource not found"));
 
+        LocalDate today = AppClock.today();
+        LocalDate pickupDate = request.getPickupDate() != null ? request.getPickupDate() : today;
+        if (pickupDate.isBefore(today)) {
+            throw new IllegalArgumentException("Pickup date cannot be in the past");
+        }
+        if (pickupDate.isAfter(today.plusDays(HORIZON_DAYS))) {
+            throw new IllegalArgumentException("Pickup date cannot be more than " + HORIZON_DAYS + " days from today");
+        }
+
         if (fineRepository.existsByMemberAndPaymentStatus(member, "UNPAID")) {
             throw new IllegalStateException("Member has unpaid fines and cannot make new reservations");
         }
         boolean hasOverdue = transactionRepository.findByMemberAndStatus(member, "ACTIVE").stream()
-                .anyMatch(t -> t.getDueDate().isBefore(AppClock.today()));
+                .anyMatch(t -> t.getDueDate().isBefore(today));
         if (hasOverdue) {
             throw new IllegalStateException("Member has overdue items and cannot make new reservations");
         }
@@ -67,10 +82,20 @@ public class ReservationService {
             throw new IllegalStateException("This title is already reserved for this member");
         }
 
+        int availableOnDate = AvailabilityCalculator.availableOnDate(
+                book, pickupDate,
+                transactionRepository.findByBookAndStatus(book, "ACTIVE"),
+                reservationRepository.findByBookAndStatusIn(book, List.of("PENDING", "APPROVED")),
+                AvailabilityService.HOLD_DAYS);
+        if (availableOnDate <= 0) {
+            throw new IllegalStateException("No copies are available for the selected pickup date");
+        }
+
         Reservation reservation = new Reservation();
         reservation.setMember(member);
         reservation.setBook(book);
-        reservation.setReservationDate(AppClock.today());
+        reservation.setReservationDate(today);
+        reservation.setPickupDate(pickupDate);
         reservation.setStatus("PENDING");
         reservation = reservationRepository.save(reservation);
 

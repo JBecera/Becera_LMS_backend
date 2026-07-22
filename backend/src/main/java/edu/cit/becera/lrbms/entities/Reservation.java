@@ -34,6 +34,10 @@ public class Reservation {
     @Column(name = "approved_at")
     private LocalDate approvedAt;
 
+    /** The date the member wants to collect the copy; anchors the hold window for availability. */
+    @Column(name = "pickup_date")
+    private LocalDate pickupDate;
+
     public Long getId() {
         return id;
     }
@@ -88,5 +92,13 @@ public class Reservation {
 
     public void setApprovedAt(LocalDate approvedAt) {
         this.approvedAt = approvedAt;
+    }
+
+    public LocalDate getPickupDate() {
+        return pickupDate;
+    }
+
+    public void setPickupDate(LocalDate pickupDate) {
+        this.pickupDate = pickupDate;
     }
 }

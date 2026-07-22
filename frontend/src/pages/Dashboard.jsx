@@ -109,7 +109,7 @@ function Dashboard() {
             <h2 style={{ marginBottom: "0.35rem" }}>Return overdue items to keep borrowing</h2>
             <p className="panel-sub" style={{ marginBottom: 0 }}>
               Accounts with overdue items or unpaid fines are restricted from new checkouts and reservations.{" "}
-              <Link to="/history">View your full history</Link>.
+              <Link to="/bookings">View your bookings</Link>.
             </p>
           </div>
         </section>
