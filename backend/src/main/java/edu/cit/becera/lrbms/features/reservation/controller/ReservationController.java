@@ -55,7 +55,7 @@ public class ReservationController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateReservation(@PathVariable Long id, @RequestBody UpdateReservationRequest request) {
         try {
-            return ResponseEntity.ok(reservationService.updateStatus(id, request.getStatus()));
+            return ResponseEntity.ok(reservationService.updateStatus(id, request.getStatus(), request.getReason()));
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
         }

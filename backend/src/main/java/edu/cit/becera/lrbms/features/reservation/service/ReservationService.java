@@ -52,10 +52,6 @@ public class ReservationService {
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new IllegalArgumentException("Member not found"));
         Book book = bookRepository.findById(request.getResourceId()).orElseThrow(() -> new IllegalArgumentException("Resource not found"));
 
-        // Reservations are the out-of-stock waitlist only - an in-stock title is borrowed directly.
-        if (book.getAvailableCopies() != null && book.getAvailableCopies() > 0) {
-            throw new IllegalStateException("This title currently has copies available — borrow it instead of reserving it");
-        }
         if (fineRepository.existsByMemberAndPaymentStatus(member, "UNPAID")) {
             throw new IllegalStateException("Member has unpaid fines and cannot make new reservations");
         }
@@ -81,12 +77,17 @@ public class ReservationService {
         return toResponse(reservation);
     }
 
-    public ReservationResponse updateStatus(Long id, String status) {
+    public ReservationResponse updateStatus(Long id, String status, String reason) {
         Reservation reservation = reservationRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
         if (status == null || (!status.equals("APPROVED") && !status.equals("REJECTED"))) {
             throw new IllegalArgumentException("Status must be APPROVED or REJECTED");
         }
         reservation.setStatus(status);
+        if (status.equals("APPROVED")) {
+            reservation.setApprovedAt(AppClock.today());
+        } else {
+            reservation.setReason(reason);
+        }
         return toResponse(reservationRepository.save(reservation));
     }
 

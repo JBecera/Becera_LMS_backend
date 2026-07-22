@@ -27,6 +27,13 @@ public class Reservation {
     @Column(nullable = false)
     private String status = "PENDING";
 
+    /** Set when a librarian rejects the booking. */
+    private String reason;
+
+    /** Set when a librarian approves the booking; anchors the pickup deadline. */
+    @Column(name = "approved_at")
+    private LocalDate approvedAt;
+
     public Long getId() {
         return id;
     }
@@ -65,5 +72,21 @@ public class Reservation {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getReason() {
+        return reason;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
+    }
+
+    public LocalDate getApprovedAt() {
+        return approvedAt;
+    }
+
+    public void setApprovedAt(LocalDate approvedAt) {
+        this.approvedAt = approvedAt;
     }
 }

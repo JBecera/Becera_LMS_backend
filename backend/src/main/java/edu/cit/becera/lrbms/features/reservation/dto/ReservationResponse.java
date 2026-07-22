@@ -13,6 +13,8 @@ public class ReservationResponse {
     private LocalDate reservationDate;
     private String status;
     private Integer queuePosition;
+    private String reason;
+    private LocalDate approvedAt;
 
     public static ReservationResponse from(Reservation reservation) {
         return from(reservation, null);
@@ -28,6 +30,8 @@ public class ReservationResponse {
         response.reservationDate = reservation.getReservationDate();
         response.status = reservation.getStatus();
         response.queuePosition = queuePosition;
+        response.reason = reservation.getReason();
+        response.approvedAt = reservation.getApprovedAt();
         return response;
     }
 
@@ -39,4 +43,6 @@ public class ReservationResponse {
     public LocalDate getReservationDate() { return reservationDate; }
     public String getStatus() { return status; }
     public Integer getQueuePosition() { return queuePosition; }
+    public String getReason() { return reason; }
+    public LocalDate getApprovedAt() { return approvedAt; }
 }

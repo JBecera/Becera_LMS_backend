@@ -11,7 +11,7 @@ function formatDate(date) {
   return date.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
 }
 
-function ReservationConfirmation() {
+function BookingConfirmation() {
   const { bookId } = useParams();
   const location = useLocation();
 
@@ -35,6 +35,8 @@ function ReservationConfirmation() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookId]);
 
+  const inStock = book?.availableCopies > 0;
+
   const handleConfirm = async (event) => {
     event.preventDefault();
     setSubmitError("");
@@ -43,7 +45,7 @@ function ReservationConfirmation() {
       const response = await createReservation(book.id);
       setResult(response.data);
     } catch (err) {
-      setSubmitError(err.response?.data?.error || "Unable to complete this reservation.");
+      setSubmitError(err.response?.data?.error || "Unable to complete this booking.");
     } finally {
       setSubmitting(false);
     }
@@ -51,7 +53,7 @@ function ReservationConfirmation() {
 
   if (loadingBook) {
     return (
-      <AppLayout eyebrow="Reserve" title="Reservation confirmation" description="Loading title details…">
+      <AppLayout eyebrow="Booking" title="Booking confirmation" description="Loading title details…">
         <section className="panel-card" style={{ marginTop: 0 }} />
       </AppLayout>
     );
@@ -59,7 +61,7 @@ function ReservationConfirmation() {
 
   if (loadError || !book) {
     return (
-      <AppLayout eyebrow="Reserve" title="Reservation confirmation" description="We ran into a problem loading this title.">
+      <AppLayout eyebrow="Booking" title="Booking confirmation" description="We ran into a problem loading this title.">
         <section className="panel-card" style={{ marginTop: 0 }}>
           <EmptyState icon="catalog" title="Title not found" description={loadError || "This title is no longer available."} />
           <Link to="/catalog" className="button secondary auto" style={{ marginTop: "1rem", display: "inline-flex" }}>
@@ -72,18 +74,20 @@ function ReservationConfirmation() {
 
   if (result) {
     return (
-      <AppLayout eyebrow="Reserve" title="Reservation confirmed" description="You're on the waitlist — we'll notify you when a copy is ready.">
+      <AppLayout eyebrow="Booking" title="Booking submitted" description="A librarian will review your request before it's ready for pickup.">
         <section className="panel-card confirmation-success" style={{ marginTop: 0 }}>
-          <Stamp value={result.queuePosition || "•"} label="In line" tone="warn" />
+          <Stamp value={inStock ? "✓" : result.queuePosition || "•"} label={inStock ? "Pending" : "In line"} tone="warn" />
           <div>
             <h2 style={{ marginBottom: "0.35rem" }}>{book.title}</h2>
             <p className="panel-sub" style={{ marginBottom: "1.25rem" }}>
-              {result.queuePosition
-                ? `You're #${result.queuePosition} in line. A librarian will approve your reservation once a copy is free.`
-                : "A librarian will approve your reservation once a copy is free."}
+              {inStock
+                ? "A librarian will approve or reject your booking soon. You'll have 3 days to pick it up once approved."
+                : result.queuePosition
+                  ? `You're #${result.queuePosition} in line. A librarian will approve your booking once a copy is free.`
+                  : "A librarian will approve your booking once a copy is free."}
             </p>
             <div className="confirmation-actions">
-              <Link to="/reservations" className="button primary auto">View My Reservations</Link>
+              <Link to="/my-borrowing" className="button primary auto">View My Borrowing</Link>
               <Link to="/catalog" className="button secondary auto">Back to catalog</Link>
             </div>
           </div>
@@ -94,9 +98,13 @@ function ReservationConfirmation() {
 
   return (
     <AppLayout
-      eyebrow="Reserve"
-      title="Confirm your reservation"
-      description="This title is fully checked out — join the waitlist and we'll hold a copy for you when one returns."
+      eyebrow="Booking"
+      title="Confirm your booking"
+      description={
+        inStock
+          ? "This title is in stock — book it for pickup and a librarian will confirm before you collect it."
+          : "This title is fully checked out — join the waitlist and we'll hold a copy for you when one returns."
+      }
     >
       <section className="panel-card book-summary-card" style={{ marginTop: 0 }}>
         <div className="catalog-cover book-summary-cover">
@@ -107,24 +115,30 @@ function ReservationConfirmation() {
           <p className="panel-sub" style={{ margin: 0 }}>{book.author}</p>
           <div className="book-summary-meta">
             <span><strong>ISBN:</strong> {book.isbn}</span>
+            {inStock ? <span><strong>Available:</strong> {book.availableCopies}</span> : null}
           </div>
-          <Badge status="unavailable">Out of stock</Badge>
+          <Badge status={inStock ? "available" : "unavailable"}>
+            {inStock ? `${book.availableCopies} available` : "Out of stock"}
+          </Badge>
         </div>
       </section>
 
       <section className="panel-card">
-        <h2>Reservation details</h2>
+        <h2>Booking details</h2>
         {submitError ? <p className="message-banner error">{submitError}</p> : null}
         <div className="book-summary-meta">
-          <span><strong>Reservation date:</strong> {formatDate(today)}</span>
-          <span><strong>Expected borrow date:</strong> As soon as a copy is returned — we&rsquo;ll notify you</span>
+          <span><strong>Booking date:</strong> {formatDate(today)}</span>
+          <span>
+            <strong>Expected pickup:</strong>{" "}
+            {inStock ? "Once a librarian approves your booking" : "As soon as a copy is returned — we'll notify you"}
+          </span>
           <span><strong>Status:</strong> <Badge status="pending">Pending</Badge></span>
         </div>
       </section>
 
       <section className="panel-card confirmation-actions-card">
         <button className="button primary auto" onClick={handleConfirm} disabled={submitting}>
-          {submitting ? "Confirming…" : "Confirm Reservation"}
+          {submitting ? "Confirming…" : "Confirm Booking"}
         </button>
         <Link to="/catalog" className="button secondary auto">Cancel</Link>
       </section>
@@ -132,4 +146,4 @@ function ReservationConfirmation() {
   );
 }
 
-export default ReservationConfirmation;
+export default BookingConfirmation;

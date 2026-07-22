@@ -6,8 +6,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 import Dashboard from "./pages/Dashboard";
 import Catalog from "./pages/Catalog";
-import BorrowConfirmation from "./pages/BorrowConfirmation";
-import ReservationConfirmation from "./pages/ReservationConfirmation";
+import BookingConfirmation from "./pages/BookingConfirmation";
 import MyBorrowing from "./pages/MyBorrowing";
 import Reservations from "./pages/Reservations";
 import BorrowingHistory from "./pages/BorrowingHistory";
@@ -32,8 +31,7 @@ function App() {
         {/* Member */}
         <Route path="/dashboard" element={<ProtectedRoute allowedRoles={["MEMBER"]}><Dashboard /></ProtectedRoute>} />
         <Route path="/catalog" element={<ProtectedRoute allowedRoles={["MEMBER"]}><Catalog /></ProtectedRoute>} />
-        <Route path="/catalog/:bookId/borrow" element={<ProtectedRoute allowedRoles={["MEMBER"]}><BorrowConfirmation /></ProtectedRoute>} />
-        <Route path="/catalog/:bookId/reserve" element={<ProtectedRoute allowedRoles={["MEMBER"]}><ReservationConfirmation /></ProtectedRoute>} />
+        <Route path="/catalog/:bookId/reserve" element={<ProtectedRoute allowedRoles={["MEMBER"]}><BookingConfirmation /></ProtectedRoute>} />
         <Route path="/my-borrowing" element={<ProtectedRoute allowedRoles={["MEMBER"]}><MyBorrowing /></ProtectedRoute>} />
         <Route path="/reservations" element={<ProtectedRoute allowedRoles={["MEMBER"]}><Reservations /></ProtectedRoute>} />
         <Route path="/history" element={<ProtectedRoute allowedRoles={["MEMBER"]}><BorrowingHistory /></ProtectedRoute>} />

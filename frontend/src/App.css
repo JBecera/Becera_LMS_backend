@@ -518,6 +518,12 @@ h1, h2, h3, h4 {
   font-size: 0.95rem;
 }
 
+.app-topbar-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+
 .message-banner {
   margin-bottom: 1.25rem;
   padding: 0.85rem 1rem;
@@ -734,6 +740,7 @@ h1, h2, h3, h4 {
 .badge.returned,
 .badge.approved,
 .badge.reserved,
+.badge.checked-out,
 .badge.settled { background: var(--accent-soft); color: var(--accent-dark); }
 
 .badge.unavailable,
@@ -932,4 +939,123 @@ h1, h2, h3, h4 {
   .app-topbar {
     flex-direction: column;
   }
+}
+
+/* ---------------- Notification bell ---------------- */
+
+.notification-bell {
+  position: relative;
+}
+
+.notification-bell-trigger {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--paper-elevated);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.notification-bell-trigger:hover {
+  color: var(--ink);
+  border-color: var(--border-strong);
+}
+
+.notification-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--burgundy);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.notification-panel {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  width: 320px;
+  max-height: 380px;
+  overflow-y: auto;
+  background: var(--paper-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 30px rgba(28, 37, 65, 0.14);
+  z-index: 20;
+}
+
+.notification-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.notification-mark-all {
+  border: none;
+  background: transparent;
+  color: var(--accent-dark);
+  font-weight: 600;
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.notification-empty {
+  padding: 1.25rem 1rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.notification-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.notification-item {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-item.unread {
+  background: var(--accent-soft);
+}
+
+.notification-message {
+  margin: 0 0 0.25rem;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+
+.notification-time {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+}
+
+/* ---------------- Booking approval cards ---------------- */
+
+.booking-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
 }

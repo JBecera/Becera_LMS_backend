@@ -1,6 +1,12 @@
+import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import Icon from "../ui/Icon";
+import NotificationBell from "./NotificationBell";
 import { navByRole, roleTag } from "./navConfig";
+import { getMemberReservations } from "../../services/reservationService";
+import { getNotifications, markAllRead, markRead, syncBookingNotifications } from "../../services/notificationService";
+
+const NOTIFICATION_POLL_MS = 20000;
 
 function initials(user) {
   const a = user?.firstName?.[0] || "";
@@ -13,6 +19,27 @@ function AppLayout({ eyebrow, title, description, actions, children }) {
   const user = JSON.parse(localStorage.getItem("user") || "null");
   const role = user?.role?.toUpperCase() || "MEMBER";
   const links = navByRole[role] || navByRole.MEMBER;
+  const isMember = role === "MEMBER";
+
+  const [notifications, setNotifications] = useState(() => (isMember && user?.id ? getNotifications(user.id) : []));
+
+  useEffect(() => {
+    if (!isMember || !user?.id) return undefined;
+
+    const sync = () => {
+      getMemberReservations(user.id)
+        .then((res) => setNotifications(syncBookingNotifications(user.id, res.data || [])))
+        .catch(() => {});
+    };
+
+    sync();
+    const interval = setInterval(sync, NOTIFICATION_POLL_MS);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleMarkRead = (id) => setNotifications(markRead(user.id, id));
+  const handleMarkAllRead = () => setNotifications(markAllRead(user.id));
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -68,7 +95,16 @@ function AppLayout({ eyebrow, title, description, actions, children }) {
             <h1>{title}</h1>
             {description ? <p>{description}</p> : null}
           </div>
-          {actions ? <div>{actions}</div> : null}
+          <div className="app-topbar-actions">
+            {isMember ? (
+              <NotificationBell
+                notifications={notifications}
+                onMarkRead={handleMarkRead}
+                onMarkAllRead={handleMarkAllRead}
+              />
+            ) : null}
+            {actions ? <div>{actions}</div> : null}
+          </div>
         </header>
         {children}
       </main>

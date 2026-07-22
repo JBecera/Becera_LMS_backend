@@ -31,8 +31,7 @@ function Catalog() {
   }, [books, search]);
 
   const handleAction = (book) => {
-    const step = book.availableCopies > 0 ? "borrow" : "reserve";
-    navigate(`/catalog/${book.id}/${step}`, { state: { book } });
+    navigate(`/catalog/${book.id}/reserve`, { state: { book } });
   };
 
   return (
@@ -75,7 +74,7 @@ function Catalog() {
                   {book.availableCopies > 0 ? `${book.availableCopies} available` : "Out of stock"}
                 </Badge>
                 <button className="button primary auto" onClick={() => handleAction(book)}>
-                  {book.availableCopies > 0 ? "Borrow Now" : "Reserve Now"}
+                  {book.availableCopies > 0 ? "Book for Pickup" : "Join Waitlist"}
                 </button>
               </div>
             </article>
