@@ -54,10 +54,6 @@ function Login() {
             <strong>24/7</strong>
             <span>Catalog access</span>
           </div>
-          <div>
-            <strong>&lt;1s</strong>
-            <span>Search response</span>
-          </div>
         </div>
       </section>
 
