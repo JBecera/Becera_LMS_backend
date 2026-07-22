@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import AppLayout from "../components/layout/AppLayout";
 import Badge from "../components/ui/Badge";
 import EmptyState from "../components/ui/EmptyState";
@@ -11,9 +11,11 @@ function toInputValue(date) {
 
 function Catalog() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [books, setBooks] = useState([]);
   const [search, setSearch] = useState("");
-  const [pickupDate, setPickupDate] = useState("");
+  // Restore the date when a member returns here via "Change date" on the booking page.
+  const [pickupDate, setPickupDate] = useState(location.state?.pickupDate || "");
   const [message, setMessage] = useState("");
 
   const today = useMemo(() => new Date(), []);
@@ -38,7 +40,8 @@ function Catalog() {
   };
 
   useEffect(() => {
-    loadCatalog();
+    loadCatalog(search, pickupDate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredBooks = useMemo(() => {

@@ -25,14 +25,10 @@ function BookingConfirmation() {
   const [loadError, setLoadError] = useState("");
 
   const today = useMemo(() => new Date(), []);
-  const minDate = toInputValue(today);
-  const maxDate = useMemo(() => {
-    const d = new Date(today);
-    d.setDate(d.getDate() + 30);
-    return toInputValue(d);
-  }, [today]);
 
-  const [pickupDate, setPickupDate] = useState(location.state?.pickupDate || toInputValue(today));
+  // The pickup date is chosen on the catalog (single source of truth) and carried here via
+  // navigation state. If a member reached this page without picking one, fall back to today.
+  const [pickupDate] = useState(location.state?.pickupDate || toInputValue(today));
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
@@ -126,21 +122,16 @@ function BookingConfirmation() {
       <section className="panel-card">
         <h2>Booking details</h2>
         {submitError ? <p className="message-banner error">{submitError}</p> : null}
-        <form onSubmit={handleConfirm} className="form-grid" noValidate>
-          <div className="form-group">
-            <label className="form-label" htmlFor="pickupDate">Pickup date</label>
-            <input
-              id="pickupDate"
-              className="form-input"
-              type="date"
-              min={minDate}
-              max={maxDate}
-              value={pickupDate}
-              onChange={(event) => setPickupDate(event.target.value)}
-            />
-            <p className="field-hint">Up to 30 days from today. Once approved, collect by 6:00 PM that day. Status starts as <Badge status="pending">Pending</Badge></p>
+        <div className="form-group">
+          <span className="form-label">Pickup date</span>
+          <div className="booking-date-summary" style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+            <strong>{formatDate(pickupDate)}</strong>
+            <Link to="/catalog" state={{ pickupDate }} className="button secondary auto">
+              Change date
+            </Link>
           </div>
-        </form>
+          <p className="field-hint">Chosen from the catalog. Once approved, collect by 6:00 PM that day. Status starts as <Badge status="pending">Pending</Badge></p>
+        </div>
       </section>
 
       <section className="panel-card confirmation-actions-card">
