@@ -61,21 +61,26 @@ fun AccountScreen(onSignedOut: () -> Unit, viewModel: AccountViewModel = viewMod
             Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Security") })
         }
 
-        Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(
+            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
             if (tab == 0) {
                 ProfileTab(state, viewModel)
             } else {
                 SecurityTab(state, viewModel)
             }
+        }
 
-            Button(
-                onClick = { viewModel.signOut(onSignedOut) },
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF1F5F9), contentColor = Color(0xFF0F172A))
-            ) {
-                Text("Sign out", fontWeight = FontWeight.Bold)
-            }
+        // Pinned below the scrollable tab content (not inside it) so it's always reachable
+        // without scrolling, matching the web sidebar's always-visible "Sign out" button.
+        Button(
+            onClick = { viewModel.signOut(onSignedOut) },
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF1F5F9), contentColor = Color(0xFF0F172A))
+        ) {
+            Text("Sign out", fontWeight = FontWeight.Bold)
         }
     }
 }
