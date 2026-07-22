@@ -91,7 +91,7 @@ function BookingConfirmation() {
             <h2 style={{ marginBottom: "0.35rem" }}>{book.title}</h2>
             <p className="panel-sub" style={{ marginBottom: "1.25rem" }}>
               Requested for pickup on {formatDate(result.pickupDate || pickupDate)}. A librarian will approve or reject
-              your booking soon — once approved, you'll have 3 days to collect it.
+              your booking soon — once approved, you&rsquo;ll have 3 days to collect it.
             </p>
             <div className="confirmation-actions">
               <Link to="/bookings" className="button primary auto">View My Bookings</Link>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import AppLayout from "../components/layout/AppLayout";
 import Icon from "../components/ui/Icon";
+import { useToast } from "../components/ui/ToastProvider";
 import { getMember, updateMember, changePassword } from "../services/memberService";
 import { PASSWORD_HINT, passwordStrengthError } from "../utils/password";
 
@@ -8,6 +9,7 @@ const initialProfile = { firstName: "", lastName: "", email: "", phoneNumber: ""
 const initialPasswordForm = { currentPassword: "", newPassword: "", confirmPassword: "" };
 
 function Account() {
+  const toast = useToast();
   const storedUser = JSON.parse(localStorage.getItem("user")) || {};
   const [activeTab, setActiveTab] = useState("profile");
 
@@ -19,7 +21,6 @@ function Account() {
 
   const [passwordForm, setPasswordForm] = useState(initialPasswordForm);
   const [passwordErrors, setPasswordErrors] = useState({});
-  const [passwordMessage, setPasswordMessage] = useState(null);
   const [passwordSaving, setPasswordSaving] = useState(false);
 
   useEffect(() => {
@@ -48,7 +49,6 @@ function Account() {
 
   const handleProfileSubmit = async (event) => {
     event.preventDefault();
-    setProfileMessage(null);
     setProfileSaving(true);
     try {
       const res = await updateMember(storedUser.id, profile);
@@ -59,9 +59,9 @@ function Account() {
         email: res.data.email,
       };
       localStorage.setItem("user", JSON.stringify(updatedUser));
-      setProfileMessage({ type: "success", text: "Profile updated successfully." });
+      toast.success("Profile updated successfully.");
     } catch (error) {
-      setProfileMessage({ type: "error", text: error.response?.data?.error || "Unable to update your profile." });
+      toast.error(error.response?.data?.error || "Unable to update your profile.");
     } finally {
       setProfileSaving(false);
     }
@@ -95,7 +95,6 @@ function Account() {
 
   const handlePasswordSubmit = async (event) => {
     event.preventDefault();
-    setPasswordMessage(null);
     const errors = validatePasswordForm();
     setPasswordErrors(errors);
     if (Object.keys(errors).length > 0) return;
@@ -104,9 +103,9 @@ function Account() {
     try {
       await changePassword(storedUser.id, passwordForm);
       setPasswordForm(initialPasswordForm);
-      setPasswordMessage({ type: "success", text: "Password changed successfully." });
+      toast.success("Password changed successfully.");
     } catch (error) {
-      setPasswordMessage({ type: "error", text: error.response?.data?.error || "Unable to change your password." });
+      toast.error(error.response?.data?.error || "Unable to change your password.");
     } finally {
       setPasswordSaving(false);
     }
@@ -182,9 +181,6 @@ function Account() {
               <Icon name="lock" size={15} />
               Changing your password requires your current password, so no one can hijack your account from a shared or unlocked device.
             </p>
-            {passwordMessage ? (
-              <p className={`message-banner${passwordMessage.type === "error" ? " error" : ""}`}>{passwordMessage.text}</p>
-            ) : null}
             <form onSubmit={handlePasswordSubmit} className="form-grid" noValidate>
               <div className="form-group" style={{ gridColumn: "1 / -1" }}>
                 <label className="form-label" htmlFor="currentPassword">Current password</label>

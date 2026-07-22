@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import AppLayout from "../components/layout/AppLayout";
 import Badge from "../components/ui/Badge";
 import EmptyState from "../components/ui/EmptyState";
+import { useToast } from "../components/ui/ToastProvider";
 import { cancelReservation, getMemberReservations } from "../services/reservationService";
 import { getMemberTransactions } from "../services/transactionService";
 import { pickupCountdown } from "../utils/pickup";
@@ -141,6 +142,7 @@ function BookingsTable({ rows, onCancel }) {
 }
 
 function MyBookings() {
+  const toast = useToast();
   const user = JSON.parse(localStorage.getItem("user")) || {};
   const [reservations, setReservations] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -167,10 +169,10 @@ function MyBookings() {
   const handleCancel = async (id) => {
     try {
       await cancelReservation(id);
-      setMessage("Booking cancelled.");
+      toast.success("Booking cancelled.");
       load();
     } catch (error) {
-      setMessage(error.response?.data?.error || "Unable to cancel this booking.");
+      toast.error(error.response?.data?.error || "Unable to cancel this booking.");
     }
   };
 

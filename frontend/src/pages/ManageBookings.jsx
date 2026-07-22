@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import AppLayout from "../components/layout/AppLayout";
 import Badge from "../components/ui/Badge";
 import EmptyState from "../components/ui/EmptyState";
+import { useToast } from "../components/ui/ToastProvider";
 import { cancelReservation, getReservations, updateReservationStatus } from "../services/reservationService";
 import { checkInResource, checkOutResource, getTransactions } from "../services/transactionService";
 import { getFines } from "../services/fineService";
@@ -24,10 +25,10 @@ function minDueDate() {
 }
 
 function ManageBookings() {
+  const toast = useToast();
   const [reservations, setReservations] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [fines, setFines] = useState([]);
-  const [message, setMessage] = useState(null);
 
   const [rejectDrafts, setRejectDrafts] = useState({});
   const [checkoutDrafts, setCheckoutDrafts] = useState({});
@@ -61,7 +62,7 @@ function ManageBookings() {
   const activeLoans = transactions.filter((t) => t.status === "ACTIVE");
   const history = reservations.filter((r) => r.status === "REJECTED" || r.status === "COMPLETED");
 
-  const notify = (type, text) => setMessage({ type, text });
+  const notify = (type, text) => (type === "error" ? toast.error(text) : toast.success(text));
 
   const handleApprove = async (id) => {
     try {
@@ -130,10 +131,6 @@ function ManageBookings() {
       title="Booking approvals"
       description="Approve or reject requests, hand titles over at pickup, and record returns — the full booking lifecycle in one place."
     >
-      {message ? (
-        <p className={`message-banner${message.type === "error" ? " error" : ""}`}>{message.text}</p>
-      ) : null}
-
       <section className="panel-card" style={{ marginTop: 0 }}>
         <h2>Pending approvals</h2>
         {pending.length === 0 ? (

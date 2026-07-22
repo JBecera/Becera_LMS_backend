@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import AppLayout from "../components/layout/AppLayout";
 import Badge from "../components/ui/Badge";
 import EmptyState from "../components/ui/EmptyState";
+import { useToast } from "../components/ui/ToastProvider";
 import { createBook, deleteBook, getBooks, updateBook } from "../services/bookService";
 
 const emptyForm = { id: null, title: "", author: "", isbn: "", category: "", description: "", coverImage: "", totalCopies: 1, availableCopies: 1 };
 
 function ManageCatalog() {
+  const toast = useToast();
   const [books, setBooks] = useState([]);
   const [bookForm, setBookForm] = useState(emptyForm);
   const [message, setMessage] = useState("");
@@ -36,15 +38,15 @@ function ManageCatalog() {
     try {
       if (bookForm.id) {
         await updateBook(bookForm.id, bookForm);
-        setMessage("Book updated successfully.");
+        toast.success("Book updated successfully.");
       } else {
         await createBook(bookForm);
-        setMessage("Book added to the catalog.");
+        toast.success("Book added to the catalog.");
       }
       setBookForm(emptyForm);
       loadData();
     } catch (error) {
-      setMessage(error.response?.data?.error || "Unable to save book.");
+      toast.error(error.response?.data?.error || "Unable to save book.");
     }
   };
 
@@ -59,10 +61,10 @@ function ManageCatalog() {
   const handleDelete = async (id) => {
     try {
       await deleteBook(id);
-      setMessage("Book removed from the catalog.");
+      toast.success("Book removed from the catalog.");
       loadData();
     } catch (error) {
-      setMessage("Unable to remove this book.");
+      toast.error("Unable to remove this book.");
     }
   };
 

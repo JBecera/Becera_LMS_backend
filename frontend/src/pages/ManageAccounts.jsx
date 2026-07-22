@@ -3,11 +3,13 @@ import AppLayout from "../components/layout/AppLayout";
 import Badge from "../components/ui/Badge";
 import EmptyState from "../components/ui/EmptyState";
 import api from "../services/api";
+import { useToast } from "../components/ui/ToastProvider";
 import { PASSWORD_HINT, passwordStrengthError } from "../utils/password";
 
 const emptyForm = { id: null, firstName: "", lastName: "", email: "", password: "", role: "LIBRARIAN" };
 
 function ManageAccounts() {
+  const toast = useToast();
   const [members, setMembers] = useState([]);
   const [librarians, setLibrarians] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -41,7 +43,7 @@ function ManageAccounts() {
     if (!form.id || form.password) {
       const passwordError = passwordStrengthError(form.password);
       if (passwordError) {
-        setMessage(passwordError);
+        toast.error(passwordError);
         return;
       }
     }
@@ -52,15 +54,15 @@ function ManageAccounts() {
         if (password) {
           await api.put(`/members/${form.id}/password`, { newPassword: password, confirmPassword: password });
         }
-        setMessage("Account updated successfully.");
+        toast.success("Account updated successfully.");
       } else {
         await api.post("/members", { ...form, role: "LIBRARIAN" });
-        setMessage("Librarian account created successfully.");
+        toast.success("Librarian account created successfully.");
       }
       setForm(emptyForm);
       loadData();
     } catch (error) {
-      setMessage(error.response?.data?.error || "Unable to save account.");
+      toast.error(error.response?.data?.error || "Unable to save account.");
     }
   };
 
@@ -79,10 +81,10 @@ function ManageAccounts() {
     if (!window.confirm("Remove this account?")) return;
     try {
       await api.delete(`/members/${id}`);
-      setMessage("Account removed successfully.");
+      toast.success("Account removed successfully.");
       loadData();
     } catch (error) {
-      setMessage(error.response?.data?.error || "Unable to remove account.");
+      toast.error(error.response?.data?.error || "Unable to remove account.");
     }
   };
 

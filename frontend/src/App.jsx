@@ -1,5 +1,6 @@
 import "./App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { ToastProvider } from "./components/ui/ToastProvider";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -21,8 +22,9 @@ import ManageAccounts from "./pages/ManageAccounts";
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <ToastProvider>
+      <BrowserRouter>
+        <Routes>
         <Route path="/" element={<Register />} />
         <Route path="/login" element={<Login />} />
 
@@ -48,8 +50,9 @@ function App() {
         <Route path="/account" element={<ProtectedRoute allowedRoles={["MEMBER", "LIBRARIAN", "ADMIN"]}><Account /></ProtectedRoute>} />
 
         <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </ToastProvider>
   );
 }
 

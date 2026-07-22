@@ -3,9 +3,11 @@ import AppLayout from "../components/layout/AppLayout";
 import Badge from "../components/ui/Badge";
 import StatCard from "../components/ui/StatCard";
 import EmptyState from "../components/ui/EmptyState";
+import { useToast } from "../components/ui/ToastProvider";
 import { getFines, getMemberFines, settleFine } from "../services/fineService";
 
 function Fines() {
+  const toast = useToast();
   const user = JSON.parse(localStorage.getItem("user")) || {};
   const isStaff = ["LIBRARIAN", "ADMIN"].includes(user.role?.toUpperCase());
 
@@ -31,10 +33,10 @@ function Fines() {
   const handleSettle = async (id) => {
     try {
       await settleFine(id);
-      setMessage("Fine marked as settled.");
+      toast.success("Fine marked as settled.");
       load();
     } catch (error) {
-      setMessage(error.response?.data?.error || "Unable to update this fine.");
+      toast.error(error.response?.data?.error || "Unable to update this fine.");
     }
   };
 

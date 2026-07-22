@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import AppLayout from "../components/layout/AppLayout";
 import EmptyState from "../components/ui/EmptyState";
+import { useToast } from "../components/ui/ToastProvider";
 import { addMember, getMembers } from "../services/memberService";
 import { PASSWORD_HINT, passwordStrengthError } from "../utils/password";
 
 const emptyForm = { firstName: "", lastName: "", email: "", password: "" };
 
 function Members() {
+  const toast = useToast();
   const [members, setMembers] = useState([]);
   const [search, setSearch] = useState("");
   const [form, setForm] = useState(emptyForm);
@@ -32,16 +34,16 @@ function Members() {
     event.preventDefault();
     const passwordError = passwordStrengthError(form.password);
     if (passwordError) {
-      setMessage(passwordError);
+      toast.error(passwordError);
       return;
     }
     try {
       await addMember({ ...form, role: "MEMBER" });
-      setMessage(`Member account created for ${form.firstName} ${form.lastName}.`);
+      toast.success(`Member account created for ${form.firstName} ${form.lastName}.`);
       setForm(emptyForm);
       load();
     } catch (error) {
-      setMessage(error.response?.data?.error || "Unable to register this member.");
+      toast.error(error.response?.data?.error || "Unable to register this member.");
     }
   };
 
