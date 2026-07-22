@@ -4,12 +4,7 @@ import Badge from "../components/ui/Badge";
 import EmptyState from "../components/ui/EmptyState";
 import { cancelReservation, getMemberReservations } from "../services/reservationService";
 import { getMemberTransactions } from "../services/transactionService";
-
-const PICKUP_WINDOW_DAYS = 3;
-
-function daysBetween(from, to) {
-  return Math.floor((new Date(to) - new Date(from)) / (1000 * 60 * 60 * 24));
-}
+import { pickupCountdown } from "../utils/pickup";
 
 function daysUntil(dateString) {
   if (!dateString) return null;
@@ -47,13 +42,13 @@ function buildRows(reservations, transactions) {
         row.note = "Awaiting librarian approval";
         active.push(row);
       } else if (r.status === "APPROVED") {
-        const daysLeft = r.approvedAt ? PICKUP_WINDOW_DAYS - daysBetween(r.approvedAt, new Date()) : null;
-        if (daysLeft !== null && daysLeft < 0) {
+        const { expired, label } = pickupCountdown(r.approvedAt);
+        if (expired) {
           row.badge = <Badge status="expired">Expired</Badge>;
           row.note = "Pickup window passed";
         } else {
           row.badge = <Badge status="approved">Approved</Badge>;
-          row.note = daysLeft !== null ? `${daysLeft}d left to pick up` : "Ready for pickup";
+          row.note = label;
         }
         active.push(row);
       } else if (r.status === "REJECTED") {

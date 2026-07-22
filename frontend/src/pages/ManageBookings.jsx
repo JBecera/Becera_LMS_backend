@@ -5,12 +5,7 @@ import EmptyState from "../components/ui/EmptyState";
 import { cancelReservation, getReservations, updateReservationStatus } from "../services/reservationService";
 import { checkInResource, checkOutResource, getTransactions } from "../services/transactionService";
 import { getFines } from "../services/fineService";
-
-const PICKUP_WINDOW_DAYS = 3;
-
-function daysBetween(from, to) {
-  return Math.floor((new Date(to) - new Date(from)) / (1000 * 60 * 60 * 24));
-}
+import { pickupCountdown } from "../utils/pickup";
 
 function toInputValue(date) {
   return date.toISOString().slice(0, 10);
@@ -219,8 +214,7 @@ function ManageBookings() {
               </thead>
               <tbody>
                 {approved.map((r) => {
-                  const daysLeft = r.approvedAt ? PICKUP_WINDOW_DAYS - daysBetween(r.approvedAt, new Date()) : null;
-                  const expired = daysLeft !== null && daysLeft < 0;
+                  const { expired, label } = pickupCountdown(r.approvedAt);
                   return (
                     <tr key={r.id}>
                       <td>{r.memberName}</td>
@@ -230,7 +224,7 @@ function ManageBookings() {
                         {expired ? (
                           <Badge status="expired">Expired</Badge>
                         ) : (
-                          <Badge status="approved">{daysLeft}d left to pick up</Badge>
+                          <Badge status="approved">{label}</Badge>
                         )}
                       </td>
                       <td>
