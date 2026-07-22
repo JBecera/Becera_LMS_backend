@@ -49,6 +49,7 @@ public class MembershipService {
         if (request.getEmail() == null || request.getEmail().isBlank()) {
             throw new IllegalArgumentException("Email is required");
         }
+        validateEmailFormat(request.getEmail());
         if (request.getPassword() == null || request.getPassword().isBlank()) {
             throw new IllegalArgumentException("Password is required");
         }
@@ -106,6 +107,7 @@ public class MembershipService {
             member.setLastName(request.getLastName());
         }
         if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            validateEmailFormat(request.getEmail());
             member.setEmail(request.getEmail().trim().toLowerCase());
         }
         if (request.getPhoneNumber() != null) {
@@ -161,6 +163,20 @@ public class MembershipService {
 
     public void deleteMember(Long id) {
         memberRepository.deleteById(id);
+    }
+
+    /**
+     * The email is matched against the same pattern the entity is stored in (trimmed, lower-cased),
+     * so a value like "user", "user@", or "user@site" is rejected before it reaches the database.
+     */
+    private static final java.util.regex.Pattern EMAIL_PATTERN =
+            java.util.regex.Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
+
+    private void validateEmailFormat(String email) {
+        String normalized = email.trim().toLowerCase();
+        if (!EMAIL_PATTERN.matcher(normalized).matches()) {
+            throw new IllegalArgumentException("Email must be a valid email address");
+        }
     }
 
     /**
