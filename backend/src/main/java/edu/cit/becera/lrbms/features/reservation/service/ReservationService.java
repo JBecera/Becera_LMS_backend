@@ -18,6 +18,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -43,12 +44,32 @@ public class ReservationService {
     }
 
     public List<ReservationResponse> getAllReservations() {
+        expireOverduePickups();
         return reservationRepository.findAll().stream().map(this::toResponse).toList();
     }
 
     public List<ReservationResponse> getReservationsForMember(Long memberId) {
+        expireOverduePickups();
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new IllegalArgumentException("Member not found"));
         return reservationRepository.findByMember(member).stream().map(this::toResponse).toList();
+    }
+
+    /**
+     * Auto-cancels approved bookings that were never collected: once the clock passes the pickup
+     * deadline (6 PM on the pickup date, Manila time) an APPROVED booking flips to EXPIRED, which
+     * both frees the held copy and shows the member why the booking lapsed. Run lazily on every
+     * listing so the data is correct even when the scheduled sweep hasn't fired (e.g. after a
+     * Render cold start), and periodically by the scheduler so copies free up without a page load.
+     */
+    public void expireOverduePickups() {
+        LocalDateTime now = AppClock.now();
+        for (Reservation reservation : reservationRepository.findByStatusIn(List.of("APPROVED"))) {
+            LocalDate pickupDate = reservation.getPickupDate();
+            if (pickupDate != null && now.isAfter(AppClock.pickupDeadline(pickupDate))) {
+                reservation.setStatus("EXPIRED");
+                reservationRepository.save(reservation);
+            }
+        }
     }
 
     public ReservationResponse create(Long memberId, CreateReservationRequest request) {

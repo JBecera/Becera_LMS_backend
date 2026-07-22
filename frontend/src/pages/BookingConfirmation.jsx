@@ -91,7 +91,7 @@ function BookingConfirmation() {
             <h2 style={{ marginBottom: "0.35rem" }}>{book.title}</h2>
             <p className="panel-sub" style={{ marginBottom: "1.25rem" }}>
               Requested for pickup on {formatDate(result.pickupDate || pickupDate)}. A librarian will approve or reject
-              your booking soon — once approved, you&rsquo;ll have 3 days to collect it.
+              your booking soon — once approved, collect it by 6:00 PM on your pickup date or the booking expires.
             </p>
             <div className="confirmation-actions">
               <Link to="/bookings" className="button primary auto">View My Bookings</Link>
@@ -138,7 +138,7 @@ function BookingConfirmation() {
               value={pickupDate}
               onChange={(event) => setPickupDate(event.target.value)}
             />
-            <p className="field-hint">Up to 30 days from today. Status starts as <Badge status="pending">Pending</Badge></p>
+            <p className="field-hint">Up to 30 days from today. Once approved, collect by 6:00 PM that day. Status starts as <Badge status="pending">Pending</Badge></p>
           </div>
         </form>
       </section>

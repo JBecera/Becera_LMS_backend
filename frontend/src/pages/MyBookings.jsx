@@ -5,7 +5,8 @@ import EmptyState from "../components/ui/EmptyState";
 import { useToast } from "../components/ui/ToastProvider";
 import { cancelReservation, getMemberReservations } from "../services/reservationService";
 import { getMemberTransactions } from "../services/transactionService";
-import { pickupCountdown } from "../utils/pickup";
+import { pickupByLabel, pickupCountdown } from "../utils/pickup";
+import { useMinuteTick } from "../utils/useMinuteTick";
 
 function daysUntil(dateString) {
   if (!dateString) return null;
@@ -21,7 +22,7 @@ function matchTransaction(reservation, transactions, usedIds) {
     .sort((a, b) => new Date(a.checkOutDate) - new Date(b.checkOutDate))[0] || null;
 }
 
-function buildRows(reservations, transactions) {
+function buildRows(reservations, transactions, now) {
   const usedTransactionIds = new Set();
   const active = [];
   const history = [];
@@ -43,18 +44,22 @@ function buildRows(reservations, transactions) {
         row.note = "Awaiting librarian approval";
         active.push(row);
       } else if (r.status === "APPROVED") {
-        const { expired, label } = pickupCountdown(r.approvedAt);
+        const { expired, label } = pickupCountdown(r.pickupDate, now);
         if (expired) {
-          row.badge = <Badge status="expired">Expired</Badge>;
-          row.note = "Pickup window passed";
+          row.badge = <Badge status="expired">Pickup window expired</Badge>;
+          row.note = r.pickupDate ? `Deadline was ${pickupByLabel(r.pickupDate)}` : "Pickup window passed";
         } else {
-          row.badge = <Badge status="approved">Approved</Badge>;
-          row.note = label;
+          row.badge = <Badge status="approved">{label}</Badge>;
+          row.note = r.pickupDate ? `Pick up ${pickupByLabel(r.pickupDate)}` : "Ready for pickup";
         }
         active.push(row);
       } else if (r.status === "REJECTED") {
         row.badge = <Badge status="rejected">Rejected</Badge>;
         row.note = r.reason ? `Reason: ${r.reason}` : "—";
+        history.push(row);
+      } else if (r.status === "EXPIRED") {
+        row.badge = <Badge status="expired">Expired</Badge>;
+        row.note = r.pickupDate ? `Not collected by ${pickupByLabel(r.pickupDate)}` : "Pickup window passed";
         history.push(row);
       } else if (r.status === "COMPLETED") {
         const t = matchTransaction(r, transactions, usedTransactionIds);
@@ -143,6 +148,7 @@ function BookingsTable({ rows, onCancel }) {
 
 function MyBookings() {
   const toast = useToast();
+  const now = useMinuteTick();
   const user = JSON.parse(localStorage.getItem("user")) || {};
   const [reservations, setReservations] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -176,7 +182,7 @@ function MyBookings() {
     }
   };
 
-  const { active, history } = buildRows(reservations, transactions);
+  const { active, history } = buildRows(reservations, transactions, now);
 
   return (
     <AppLayout

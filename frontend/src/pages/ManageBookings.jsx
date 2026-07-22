@@ -6,7 +6,8 @@ import { useToast } from "../components/ui/ToastProvider";
 import { cancelReservation, getReservations, updateReservationStatus } from "../services/reservationService";
 import { checkInResource, checkOutResource, getTransactions } from "../services/transactionService";
 import { getFines } from "../services/fineService";
-import { pickupCountdown } from "../utils/pickup";
+import { pickupByLabel, pickupCountdown } from "../utils/pickup";
+import { useMinuteTick } from "../utils/useMinuteTick";
 
 function toInputValue(date) {
   return date.toISOString().slice(0, 10);
@@ -26,6 +27,7 @@ function minDueDate() {
 
 function ManageBookings() {
   const toast = useToast();
+  const now = useMinuteTick();
   const [reservations, setReservations] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [fines, setFines] = useState([]);
@@ -60,7 +62,9 @@ function ManageBookings() {
   const pending = reservations.filter((r) => r.status === "PENDING");
   const approved = reservations.filter((r) => r.status === "APPROVED");
   const activeLoans = transactions.filter((t) => t.status === "ACTIVE");
-  const history = reservations.filter((r) => r.status === "REJECTED" || r.status === "COMPLETED");
+  const history = reservations.filter(
+    (r) => r.status === "REJECTED" || r.status === "COMPLETED" || r.status === "EXPIRED"
+  );
 
   const notify = (type, text) => (type === "error" ? toast.error(text) : toast.success(text));
 
@@ -195,6 +199,7 @@ function ManageBookings() {
 
       <section className="panel-card">
         <h2>Awaiting pickup</h2>
+        <p className="panel-sub">Members must collect by 6:00 PM on the pickup date; uncollected bookings expire automatically.</p>
         {approved.length === 0 ? (
           <EmptyState icon="reserve" title="Nothing awaiting pickup" description="Approved bookings appear here until the member collects them." />
         ) : (
@@ -204,29 +209,29 @@ function ManageBookings() {
                 <tr>
                   <th>Member</th>
                   <th>Resource</th>
-                  <th>Approved</th>
-                  <th>Status</th>
+                  <th>Pickup date</th>
+                  <th>Time left</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
                 {approved.map((r) => {
-                  const { expired, label } = pickupCountdown(r.approvedAt);
+                  const { expired, label } = pickupCountdown(r.pickupDate, now);
                   return (
                     <tr key={r.id}>
                       <td>{r.memberName}</td>
                       <td>{r.resourceTitle}</td>
-                      <td className="mono">{r.approvedAt || "—"}</td>
+                      <td className="mono">{r.pickupDate || "—"}</td>
                       <td>
                         {expired ? (
-                          <Badge status="expired">Expired</Badge>
+                          <Badge status="expired">Pickup window expired</Badge>
                         ) : (
                           <Badge status="approved">{label}</Badge>
                         )}
                       </td>
                       <td>
                         {expired ? (
-                          <button className="table-action danger" onClick={() => handleCancel(r.id)}>Cancel expired</button>
+                          <button className="table-action danger" onClick={() => handleCancel(r.id)}>Cancel</button>
                         ) : (
                           <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
                             <input

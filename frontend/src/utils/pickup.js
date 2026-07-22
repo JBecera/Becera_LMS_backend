@@ -1,23 +1,42 @@
-// A booking approved on `approvedAt` (a YYYY-MM-DD date) must be collected within this many days.
-export const PICKUP_WINDOW_DAYS = 3;
+// The library closes at 6 PM. A booking's pickup deadline is closing time on its pickup date,
+// after which an un-collected booking expires (and the backend auto-cancels it).
+export const CLOSING_HOUR = 18;
+export const CLOSING_LABEL = "6:00 PM";
 
-const HOUR_MS = 1000 * 60 * 60;
-const DAY_MS = HOUR_MS * 24;
+const MIN_MS = 60 * 1000;
+const HOUR_MS = 60 * MIN_MS;
+const DAY_MS = 24 * HOUR_MS;
 
-// Returns { expired, label } for an approved booking's pickup window, counting down in whole days
-// until the final day, then switching to hours so the last stretch doesn't read as "0d left".
-export function pickupCountdown(approvedAt, windowDays = PICKUP_WINDOW_DAYS) {
-  if (!approvedAt) {
+// Local closing time on the pickup date. pickupDate is a plain "YYYY-MM-DD" string, so this reads
+// as 6 PM on that date in the viewer's timezone (Manila for library users, matching the backend).
+export function pickupDeadline(pickupDate) {
+  if (!pickupDate) return null;
+  const deadline = new Date(`${pickupDate}T00:00:00`);
+  deadline.setHours(CLOSING_HOUR, 0, 0, 0);
+  return deadline;
+}
+
+// { expired, label } for a booking's pickup window. `now` is passed in so callers can re-render it
+// live on a timer. Counts down as "Xd Xh Xm" until under a day remains, then "Xh Xm".
+export function pickupCountdown(pickupDate, now = Date.now()) {
+  const deadline = pickupDeadline(pickupDate);
+  if (!deadline) {
     return { expired: false, label: "Ready for pickup" };
   }
-  const deadline = new Date(`${approvedAt}T00:00:00`).getTime() + windowDays * DAY_MS;
-  const remaining = deadline - Date.now();
-
+  const remaining = deadline.getTime() - now;
   if (remaining <= 0) {
-    return { expired: true, label: "Expired" };
+    return { expired: true, label: "Pickup window expired" };
   }
-  if (remaining >= DAY_MS) {
-    return { expired: false, label: `${Math.ceil(remaining / DAY_MS)}d left to pick up` };
-  }
-  return { expired: false, label: `${Math.max(1, Math.ceil(remaining / HOUR_MS))}h left to pick up` };
+  const days = Math.floor(remaining / DAY_MS);
+  const hours = Math.floor((remaining % DAY_MS) / HOUR_MS);
+  const minutes = Math.floor((remaining % HOUR_MS) / MIN_MS);
+  const label = days >= 1
+    ? `${days}d ${hours}h ${minutes}m left to pick up`
+    : `${hours}h ${minutes}m left to pick up`;
+  return { expired: false, label };
+}
+
+// "by 6:00 PM on 2026-07-23" — reminds the member of the exact cut-off.
+export function pickupByLabel(pickupDate) {
+  return `by ${CLOSING_LABEL} on ${pickupDate}`;
 }
