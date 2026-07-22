@@ -5,6 +5,7 @@ import EmptyState from "../components/ui/EmptyState";
 import api from "../services/api";
 import { useToast } from "../components/ui/ToastProvider";
 import { PASSWORD_HINT, passwordStrengthError } from "../utils/password";
+import { emailFormatError } from "../utils/email";
 
 const emptyForm = { id: null, firstName: "", lastName: "", email: "", password: "", role: "LIBRARIAN" };
 
@@ -39,6 +40,11 @@ function ManageAccounts() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const emailError = emailFormatError(form.email);
+    if (emailError) {
+      toast.error(emailError);
+      return;
+    }
     // On create the password is required; on edit it's optional but still must be strong if set.
     if (!form.id || form.password) {
       const passwordError = passwordStrengthError(form.password);

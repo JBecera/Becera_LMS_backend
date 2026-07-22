@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Button from "../components/Button";
 import { addMember } from "../services/memberService";
 import { PASSWORD_HINT, passwordStrengthError } from "../utils/password";
+import { emailFormatError } from "../utils/email";
 
 function Register() {
   const navigate = useNavigate();
@@ -16,6 +17,11 @@ function Register() {
 
   const handleRegister = async () => {
     setMessage("");
+    const emailError = emailFormatError(member.email);
+    if (emailError) {
+      setMessage(emailError);
+      return;
+    }
     const passwordError = passwordStrengthError(member.password);
     if (passwordError) {
       setMessage(passwordError);
@@ -37,7 +43,7 @@ function Register() {
         <span className="brass-mark">LRBMS · Est. Reading Room</span>
         <div>
           <h1>Your library card, reimagined as a dashboard.</h1>
-          <p>Register once to search the catalog, reserve resources, and follow every due date in real time.</p>
+          <p>Register once to search the cat  alog, reserve resources, and follow every due date in real time.</p>
         </div>
         <div className="catalog-stat">
           <div>
