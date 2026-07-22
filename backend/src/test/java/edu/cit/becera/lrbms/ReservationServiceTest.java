@@ -75,10 +75,12 @@ class ReservationServiceTest {
     }
 
     @Test
-    void createShouldRejectWhenCopiesAreAvailable() {
+    void createShouldSucceedWhenCopiesAreAvailable() {
         book.setAvailableCopies(3);
 
-        assertThrows(IllegalStateException.class, () -> reservationService.create(1L, request()));
+        ReservationResponse response = reservationService.create(1L, request());
+
+        assertEquals("PENDING", response.getStatus());
     }
 
     @Test
@@ -134,7 +136,7 @@ class ReservationServiceTest {
         when(reservationRepository.findById(9L)).thenReturn(Optional.of(reservation));
         when(reservationRepository.save(reservation)).thenReturn(reservation);
 
-        ReservationResponse response = reservationService.updateStatus(9L, "APPROVED");
+        ReservationResponse response = reservationService.updateStatus(9L, "APPROVED", null);
 
         assertNull(response.getQueuePosition());
     }
