@@ -59,6 +59,27 @@ function Fines() {
         </section>
       ) : null}
 
+      <section className="panel-card fines-info" style={{ marginTop: 0, marginBottom: "1.5rem" }}>
+        <h2>How fines are calculated</h2>
+        <p className="panel-sub">
+          Overdue penalties are added automatically when a borrowed item is returned past its due date.
+        </p>
+        <ul className="fines-info-list">
+          <li>
+            <strong>₱5.00 per day late</strong> — the fine equals the number of days overdue multiplied by ₱5.00.
+            A book returned 3 days late, for example, incurs a ₱15.00 fine.
+          </li>
+          <li>
+            <strong>Loan period is up to 14 days.</strong> Days are counted from the due date to the day the item
+            is returned — on-time returns are never fined.
+          </li>
+          <li>
+            <strong>Unpaid fines pause borrowing.</strong> While any fine is unpaid, new checkouts and reservations
+            are blocked until it is settled at the front desk.
+          </li>
+        </ul>
+      </section>
+
       <section className="panel-card" style={{ marginTop: 0 }}>
         {fines.length === 0 ? (
           <EmptyState icon="fines" title="No fines on record" description="Overdue penalties will be listed here as soon as they're issued." />
