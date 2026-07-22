@@ -14,3 +14,14 @@ data class Transaction(
     @SerializedName("checkInDate") val checkInDate: String? = null,
     @SerializedName("status") val status: String
 )
+
+data class CheckoutRequest(
+    @SerializedName("memberId") val memberId: Long,
+    @SerializedName("resourceId") val resourceId: Long,
+    @SerializedName("dueDate") val dueDate: String
+)
+
+data class SelfCheckoutRequest(
+    @SerializedName("resourceId") val resourceId: Long,
+    @SerializedName("dueDate") val dueDate: String
+)

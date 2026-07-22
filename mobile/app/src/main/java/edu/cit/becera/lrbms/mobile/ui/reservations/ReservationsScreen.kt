@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import edu.cit.becera.lrbms.mobile.data.model.Reservation
+import edu.cit.becera.lrbms.mobile.ui.common.pickupCountdown
 import edu.cit.becera.lrbms.mobile.ui.dashboard.InfoCard
 
 @Composable
@@ -72,6 +73,21 @@ private fun ReservationRow(reservation: Reservation, onCancel: () -> Unit) {
             Column {
                 Text(reservation.resourceTitle ?: "Resource #${reservation.resourceId}", fontWeight = FontWeight.Bold, color = Color(0xFF1E293B), fontSize = 15.sp)
                 Text("Reserved ${reservation.reservationDate ?: "—"} · ${reservation.status}", fontSize = 12.sp, color = Color(0xFF64748B))
+                when (reservation.status) {
+                    "APPROVED" -> {
+                        val countdown = pickupCountdown(reservation.pickupDate)
+                        Text(
+                            countdown.label,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (countdown.expired) Color(0xFFDC2626) else Color(0xFF16A34A)
+                        )
+                    }
+                    "REJECTED" -> reservation.reason?.let {
+                        Text("Reason: $it", fontSize = 12.sp, color = Color(0xFFDC2626))
+                    }
+                    "PENDING" -> Text("Awaiting librarian approval", fontSize = 12.sp, color = Color(0xFF94A3B8))
+                }
             }
             if (reservation.status == "PENDING") {
                 Button(

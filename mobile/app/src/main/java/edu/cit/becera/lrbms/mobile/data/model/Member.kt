@@ -14,3 +14,9 @@ data class Member(
     @SerializedName("address") val address: String? = null,
     @SerializedName("dateRegistered") val dateRegistered: String? = null
 )
+
+data class ChangePasswordRequest(
+    @SerializedName("currentPassword") val currentPassword: String,
+    @SerializedName("newPassword") val newPassword: String,
+    @SerializedName("confirmPassword") val confirmPassword: String
+)

@@ -9,9 +9,17 @@ data class Reservation(
     @SerializedName("resourceId") val resourceId: Long,
     @SerializedName("resourceTitle") val resourceTitle: String? = null,
     @SerializedName("reservationDate") val reservationDate: String? = null,
-    @SerializedName("status") val status: String
+    @SerializedName("pickupDate") val pickupDate: String? = null,
+    @SerializedName("status") val status: String,
+    @SerializedName("reason") val reason: String? = null
 )
 
 data class CreateReservationRequest(
-    @SerializedName("resourceId") val resourceId: Long
+    @SerializedName("resourceId") val resourceId: Long,
+    @SerializedName("pickupDate") val pickupDate: String? = null
+)
+
+data class UpdateReservationRequest(
+    @SerializedName("status") val status: String,
+    @SerializedName("reason") val reason: String? = null
 )

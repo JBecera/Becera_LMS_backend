@@ -11,3 +11,7 @@ data class Fine(
     @SerializedName("paymentStatus") val paymentStatus: String,
     @SerializedName("dateIssued") val dateIssued: String? = null
 )
+
+data class UpdateFineRequest(
+    @SerializedName("paymentStatus") val paymentStatus: String
+)

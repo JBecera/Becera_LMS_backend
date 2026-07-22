@@ -4,12 +4,15 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import edu.cit.becera.lrbms.mobile.data.local.SessionManager
-import edu.cit.becera.lrbms.mobile.data.local.UserSession
+import edu.cit.becera.lrbms.mobile.data.model.ChangePasswordRequest
 import edu.cit.becera.lrbms.mobile.data.model.Member
 import edu.cit.becera.lrbms.mobile.data.remote.RetrofitClient
+import edu.cit.becera.lrbms.mobile.data.remote.errorMessage
+import edu.cit.becera.lrbms.mobile.ui.common.passwordStrengthError
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 
 data class AccountUiState(
     val isLoading: Boolean = true,
@@ -18,10 +21,19 @@ data class AccountUiState(
     val email: String = "",
     val phoneNumber: String = "",
     val address: String = "",
-    val password: String = "",
     val memberId: String? = null,
     val dateRegistered: String? = null,
-    val message: String? = null
+    val profileSaving: Boolean = false,
+    val profileMessage: String? = null,
+
+    val currentPassword: String = "",
+    val newPassword: String = "",
+    val confirmPassword: String = "",
+    val currentPasswordError: String? = null,
+    val newPasswordError: String? = null,
+    val confirmPasswordError: String? = null,
+    val passwordSaving: Boolean = false,
+    val passwordMessage: String? = null
 )
 
 class AccountViewModel(application: Application) : AndroidViewModel(application) {
@@ -45,7 +57,7 @@ class AccountViewModel(application: Application) : AndroidViewModel(application)
                     dateRegistered = account.dateRegistered
                 )
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(isLoading = false, message = "Unable to load your account details.")
+                _uiState.value = _uiState.value.copy(isLoading = false, profileMessage = "Unable to load your account details.")
             }
         }
     }
@@ -54,16 +66,16 @@ class AccountViewModel(application: Application) : AndroidViewModel(application)
         _uiState.value = _uiState.value.update()
     }
 
-    fun save() {
+    fun saveProfile() {
         val session = SessionManager.current ?: return
         val state = _uiState.value
+        _uiState.value = state.copy(profileSaving = true, profileMessage = null)
         viewModelScope.launch {
             try {
                 val payload = Member(
                     firstName = state.firstName,
                     lastName = state.lastName,
                     email = state.email,
-                    password = state.password.ifBlank { null },
                     phoneNumber = state.phoneNumber,
                     address = state.address
                 )
@@ -72,9 +84,68 @@ class AccountViewModel(application: Application) : AndroidViewModel(application)
                     getApplication(),
                     session.copy(firstName = updated.firstName ?: session.firstName, lastName = updated.lastName ?: session.lastName, email = updated.email)
                 )
-                _uiState.value = _uiState.value.copy(password = "", message = "Account updated successfully.")
+                _uiState.value = _uiState.value.copy(profileSaving = false, profileMessage = "Profile updated successfully.")
+            } catch (e: HttpException) {
+                _uiState.value = _uiState.value.copy(profileSaving = false, profileMessage = e.errorMessage() ?: "Unable to update your profile.")
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(message = "Unable to update your account.")
+                _uiState.value = _uiState.value.copy(profileSaving = false, profileMessage = "Unable to update your profile.")
+            }
+        }
+    }
+
+    fun changePassword() {
+        val session = SessionManager.current ?: return
+        val state = _uiState.value
+
+        var currentError: String? = null
+        var newError: String? = null
+        var confirmError: String? = null
+
+        if (state.currentPassword.isBlank()) currentError = "Enter your current password."
+        if (state.newPassword.isBlank()) {
+            newError = "Enter a new password."
+        } else {
+            val strengthError = passwordStrengthError(state.newPassword)
+            newError = when {
+                strengthError != null -> strengthError
+                state.currentPassword.isNotBlank() && state.newPassword == state.currentPassword ->
+                    "New password must be different from your current password."
+                else -> null
+            }
+        }
+        if (state.confirmPassword.isBlank()) {
+            confirmError = "Confirm your new password."
+        } else if (state.newPassword.isNotBlank() && state.newPassword != state.confirmPassword) {
+            confirmError = "Passwords do not match."
+        }
+
+        if (currentError != null || newError != null || confirmError != null) {
+            _uiState.value = state.copy(
+                currentPasswordError = currentError,
+                newPasswordError = newError,
+                confirmPasswordError = confirmError
+            )
+            return
+        }
+
+        _uiState.value = state.copy(passwordSaving = true, passwordMessage = null, currentPasswordError = null, newPasswordError = null, confirmPasswordError = null)
+        viewModelScope.launch {
+            try {
+                RetrofitClient.api.changePassword(
+                    session.id,
+                    ChangePasswordRequest(state.currentPassword, state.newPassword, state.confirmPassword)
+                )
+                _uiState.value = _uiState.value.copy(
+                    passwordSaving = false,
+                    currentPassword = "",
+                    newPassword = "",
+                    confirmPassword = "",
+                    passwordMessage = "Password changed successfully."
+                )
+            } catch (e: HttpException) {
+                _uiState.value = _uiState.value.copy(passwordSaving = false, passwordMessage = e.errorMessage() ?: "Unable to change your password.")
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(passwordSaving = false, passwordMessage = "Unable to change your password.")
             }
         }
     }

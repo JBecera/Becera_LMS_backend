@@ -17,6 +17,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -30,7 +31,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import edu.cit.becera.lrbms.mobile.data.model.Book
+import edu.cit.becera.lrbms.mobile.ui.common.DateField
 import edu.cit.becera.lrbms.mobile.ui.dashboard.InfoCard
+import java.time.LocalDate
 
 @Composable
 fun CatalogScreen(viewModel: CatalogViewModel = viewModel()) {
@@ -47,7 +50,7 @@ fun CatalogScreen(viewModel: CatalogViewModel = viewModel()) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text("Search the catalog", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF0F172A))
-        Text("Browse by title or author. Join the waitlist when every copy is checked out.", fontSize = 13.sp, color = Color(0xFF64748B))
+        Text("Browse by title or author, pick a date to see what's available then, and book for pickup.", fontSize = 13.sp, color = Color(0xFF64748B))
 
         OutlinedTextField(
             value = state.query,
@@ -59,22 +62,45 @@ fun CatalogScreen(viewModel: CatalogViewModel = viewModel()) {
             colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF4F46E5))
         )
 
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            DateField(
+                label = "Pickup date",
+                value = state.pickupDate,
+                onValueChange = { viewModel.setPickupDate(it) },
+                minDate = LocalDate.now(),
+                maxDate = LocalDate.now().plusDays(30),
+                modifier = Modifier.weight(1f)
+            )
+            if (state.pickupDate.isNotBlank()) {
+                TextButton(onClick = { viewModel.clearPickupDate() }) { Text("Clear") }
+            }
+        }
+        Text(
+            if (state.pickupDate.isNotBlank()) "Showing availability for ${state.pickupDate}. A librarian still approves each booking."
+            else "Showing copies available now. Pick a date to book in advance.",
+            fontSize = 12.sp,
+            color = Color(0xFF94A3B8)
+        )
+
         state.message?.let {
             Text(it, fontSize = 13.sp, color = Color(0xFF4F46E5))
         }
 
         if (state.isLoading) {
             CircularProgressIndicator(color = Color(0xFF4F46E5))
-        } else if (state.books.isEmpty()) {
+        } else if (state.visibleBooks.isEmpty()) {
             InfoCard(title = "No matching titles", subtitle = "Try a different title or author, or clear your search.")
         } else {
-            state.books.forEach { book -> BookRow(book = book, onReserve = { viewModel.reserve(book.id) }) }
+            state.visibleBooks.forEach { book ->
+                BookRow(book = book, count = viewModel.availabilityFor(book), datedView = state.pickupDate.isNotBlank(), onReserve = { viewModel.reserve(book.id) })
+            }
         }
     }
 }
 
 @Composable
-private fun BookRow(book: Book, onReserve: () -> Unit) {
+private fun BookRow(book: Book, count: Int, datedView: Boolean, onReserve: () -> Unit) {
+    val canBook = count > 0
     Surface(shape = RoundedCornerShape(18.dp), color = Color.White, shadowElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(book.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF0F172A))
@@ -87,21 +113,18 @@ private fun BookRow(book: Book, onReserve: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    if (book.availableCopies > 0) "${book.availableCopies} available" else "Out of stock",
+                    if (canBook) "$count available${if (datedView) " that day" else ""}" else if (datedView) "None free that day" else "Out of stock",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = if (book.availableCopies > 0) Color(0xFF16A34A) else Color(0xFFDC2626)
+                    color = if (canBook) Color(0xFF16A34A) else Color(0xFFDC2626)
                 )
-                if (book.availableCopies <= 0) {
-                    Button(
-                        onClick = onReserve,
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4F46E5))
-                    ) {
-                        Text("Join waitlist", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                    }
-                } else {
-                    Text("Ask a librarian to check this out", fontSize = 12.sp, color = Color(0xFF94A3B8))
+                Button(
+                    onClick = onReserve,
+                    enabled = canBook,
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4F46E5))
+                ) {
+                    Text("Book for pickup", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }

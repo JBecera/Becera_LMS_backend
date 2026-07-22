@@ -3,22 +3,19 @@ package edu.cit.becera.lrbms.mobile.ui.main
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.CollectionsBookmark
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -26,42 +23,33 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import edu.cit.becera.lrbms.mobile.ui.account.AccountScreen
-import edu.cit.becera.lrbms.mobile.ui.borrowing.MyBorrowingScreen
-import edu.cit.becera.lrbms.mobile.ui.catalog.CatalogScreen
-import edu.cit.becera.lrbms.mobile.ui.dashboard.DashboardScreen
 import edu.cit.becera.lrbms.mobile.ui.fines.FinesScreen
-import edu.cit.becera.lrbms.mobile.ui.notifications.NotificationBell
-import edu.cit.becera.lrbms.mobile.ui.reservations.ReservationsScreen
+import edu.cit.becera.lrbms.mobile.ui.librarian.LibrarianDashboardScreen
+import edu.cit.becera.lrbms.mobile.ui.librarian.ManageBookingsScreen
+import edu.cit.becera.lrbms.mobile.ui.librarian.ManageCatalogScreen
+import edu.cit.becera.lrbms.mobile.ui.librarian.MembersScreen
 
-private data class Tab(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
+private data class LibrarianTab(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
 
-private val tabs = listOf(
-    Tab("dashboard", "Home", Icons.Default.Home),
-    Tab("catalog", "Catalog", Icons.AutoMirrored.Filled.MenuBook),
-    Tab("my-borrowing", "Borrowing", Icons.Default.CollectionsBookmark),
-    Tab("reservations", "Reserved", Icons.Default.Bookmark),
-    Tab("fines", "Fines", Icons.Default.Payments),
-    Tab("account", "Account", Icons.Default.Person)
+private val librarianTabs = listOf(
+    LibrarianTab("dashboard", "Home", Icons.Default.Dashboard),
+    LibrarianTab("catalog", "Catalog", Icons.AutoMirrored.Filled.MenuBook),
+    LibrarianTab("bookings", "Bookings", Icons.Default.Bookmarks),
+    LibrarianTab("members", "Members", Icons.Default.Group),
+    LibrarianTab("fines", "Fines", Icons.Default.Payments),
+    LibrarianTab("account", "Account", Icons.Default.Person)
 )
 
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-fun MemberHomeScreen(onSignedOut: () -> Unit) {
+fun LibrarianHomeScreen(onSignedOut: () -> Unit) {
     val navController = rememberNavController()
 
     Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Becera LMS", color = Color(0xFF0F172A)) },
-                actions = { NotificationBell() },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color(0xFFF8FAFC))
-            )
-        },
         bottomBar = {
             NavigationBar {
                 val backStackEntry by navController.currentBackStackEntryAsState()
                 val currentDestination = backStackEntry?.destination
-                tabs.forEach { tab ->
+                librarianTabs.forEach { tab ->
                     val selected = currentDestination?.hierarchy?.any { it.route == tab.route } == true
                     NavigationBarItem(
                         selected = selected,
@@ -80,10 +68,10 @@ fun MemberHomeScreen(onSignedOut: () -> Unit) {
         }
     ) { padding ->
         NavHost(navController = navController, startDestination = "dashboard", modifier = Modifier.padding(padding)) {
-            composable("dashboard") { DashboardScreen() }
-            composable("catalog") { CatalogScreen() }
-            composable("my-borrowing") { MyBorrowingScreen() }
-            composable("reservations") { ReservationsScreen() }
+            composable("dashboard") { LibrarianDashboardScreen() }
+            composable("catalog") { ManageCatalogScreen() }
+            composable("bookings") { ManageBookingsScreen() }
+            composable("members") { MembersScreen() }
             composable("fines") { FinesScreen() }
             composable("account") { AccountScreen(onSignedOut = onSignedOut) }
         }

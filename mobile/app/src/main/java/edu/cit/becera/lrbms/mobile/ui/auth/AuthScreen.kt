@@ -153,6 +153,11 @@ fun RegisterScreen(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF4F46E5))
                     )
+                    Text(
+                        "At least 8 characters, including a letter and a number.",
+                        fontSize = 11.sp,
+                        color = Color(0xFF94A3B8)
+                    )
 
                     if (state.errorMessage != null) {
                         Text(state.errorMessage ?: "", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
